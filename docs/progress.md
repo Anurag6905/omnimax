@@ -20,10 +20,10 @@
 - [x] Firm assumptions page (`/assumptions`): returns by asset class over periods, inflation by goal type; admins edit, others view
 - [x] Client Assumptions tab: firm defaults with per-plan overrides; "Tied to retirement" list shows every date that moves with a retirement age
 - [x] Schema: 3 assumption tables + new income/asset columns (16 tables), tested on PostgreSQL 16
+- [x] Plan results page (`/clients/[id]/results`), five views: Dashboard, Cash flow, Goal funding, Who pays for what (with investment ledger), Net worth. Sharma family only, with illustrative figures and a banner saying so
+- [x] `PlanResults` type in `packages/shared`: the output the Phase 1B engine must produce, shaped like the Omnimax output read by Input_Allocations.py
 
 ### Next
-- [ ] Results screens: year-by-year cash flow, goal funding, which investment funds which goal, net worth and allocation (sample figures, clearly labelled)
-- [ ] One-page dashboard
 - [ ] What-if panel: change retirement age, rates or goals; save as a scenario; compare with the original
 - [ ] Adviser review and sign-off
 

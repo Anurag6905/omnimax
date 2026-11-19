@@ -131,3 +131,60 @@ export interface AssumptionSet {
   updatedAt?: string;
   updatedBy?: UUID;
 }
+
+// ---- plan results (output of the calculation engine, Phase 1B) ----
+// Shape follows the Omnimax output read by Input_Allocations.py:
+// per goal per year "Amount Required" / "Amount Funded"; per investment per year
+// "Start Valuation", "Contributions", "Investment Earnings", "Withdrawals".
+
+export interface CashflowYear {
+  year: number;
+  /** age of each family member that year, by member id */
+  ages: Record<UUID, number>;
+  income: number;
+  /** household expenses before retirement (after it, living costs are the retirement goal) */
+  expenses: number;
+  loanEmi: number;
+  /** new money put into SIPs and other investments from income */
+  investing: number;
+  /** income − expenses − EMIs − investing */
+  surplus: number;
+}
+
+export interface GoalYear { goalId: UUID; year: number; required: number; funded: number }
+
+export interface InvestmentYear {
+  /** asset id, income id, or "surplus" for the pool of saved surplus */
+  sourceId: string;
+  year: number;
+  startValue: number;
+  contributions: number;
+  earnings: number;
+  withdrawals: number;
+  endValue: number;
+}
+
+/** Which source paid how much towards which goal in a year. */
+export interface AllocationRow {
+  year: number;
+  goalId: UUID;
+  sourceId: string;
+  amount: number;
+  /** why this source was used: saved surplus first, then reservations, then any eligible investment */
+  basis: 'surplus' | 'reserved-1' | 'reserved-2' | 'reserved-3' | 'any';
+}
+
+export interface NetWorthYear { year: number; assets: number; liabilities: number }
+
+export interface PlanResults {
+  clientId: UUID;
+  /** true for hand-made sample figures shown before the engine exists */
+  illustrative: boolean;
+  startYear: number;
+  endYear: number;
+  cashflow: CashflowYear[];
+  goals: GoalYear[];
+  investments: InvestmentYear[];
+  allocations: AllocationRow[];
+  netWorth: NetWorthYear[];
+}

@@ -2,6 +2,13 @@
 
 Newest first. One entry per decision: what, why, alternatives.
 
+## 2026-11-19 — Results screens before the engine exists
+- **Results are read, never calculated, in the frontend.** `lib/results.ts` returns a `PlanResults` object; Phase 1B swaps its one function for the engine. Screens don't change.
+- **`PlanResults` mirrors the Omnimax output** that `Input_Allocations.py` reads: per goal per year required/funded; per investment per year start value, contributions, earnings, withdrawals. This keeps the engine checkable against Omnimax.
+- **Sample figures are one fixed file** (`frontend/src/data/sample-results.json`, Sharma family only), made once by a throwaway script that is deliberately not in the repo: it is not the calculation method. Every results screen shows a "Sample figures, not calculated" banner; other clients show an empty state.
+- **Chart colours validated** with the dataviz checker (colour-blind separation and contrast on white). Funded/shortfall bars always show the % in text; every chart has a hover tooltip and a table nearby.
+- Recharts added for charts (as in the project proposal).
+
 ## 2026-11-19 — Assumptions and retirement-linked dates
 - Checked the screens against `Omnimax_Reverse_Project_Plan.docx` and `Omnimax Problem Analysis.docx`; added the inputs the plan lists that the data sheet lacks.
 - **Returns are set per asset class over periods**, once per plan (problem 1). A period ends in a set year, at the main client's retirement, or runs to the end. Stored as `return_assumptions` rows.

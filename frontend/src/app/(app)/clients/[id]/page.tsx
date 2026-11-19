@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { useEffect, useState } from "react";
-import { ChevronRight, Pencil } from "lucide-react";
+import { useState } from "react";
+import { BarChart3, ChevronRight, Pencil } from "lucide-react";
 import type { Client, FamilyMember } from "@omnimax/shared";
 import { Button } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
@@ -22,6 +22,7 @@ import { can } from "@/lib/roles";
 import { useClientStore } from "@/lib/store";
 import { formatDate, formatINRShort, yearAtAge } from "@/lib/format";
 import { cn } from "@/lib/cn";
+import { useHashTab } from "@/lib/use-hash-tab";
 import type { ClientRecord } from "@/data/sample-data";
 
 /** Profile tabs, in the order of the Client Data Gathering Sheet. */
@@ -35,32 +36,13 @@ const TABS: Array<{ key: string; label: string; Component: (p: TabProps) => Reac
   { key: "assumptions", label: "Assumptions", Component: AssumptionsTab },
 ];
 
-/** Keep the open tab in the URL (#goals) so a refresh or shared link opens the same tab. */
-function useTab(): [string, (k: string) => void] {
-  const [tab, setTab] = useState("family");
-  useEffect(() => {
-    const read = () => {
-      const h = window.location.hash.slice(1);
-      setTab(TABS.some((t) => t.key === h) ? h : "family");
-    };
-    read();
-    window.addEventListener("hashchange", read);
-    return () => window.removeEventListener("hashchange", read);
-  }, []);
-  const choose = (k: string) => {
-    history.replaceState(null, "", `#${k}`);
-    setTab(k);
-  };
-  return [tab, choose];
-}
-
 export default function ClientProfilePage() {
   const { id } = useParams<{ id: string }>();
   const { user, users } = useAuth();
   const { members, records, planAssumptions } = useClientStore();
   const visible = useVisibleClients();
   const client = visible.find((c) => c.id === id);
-  const [tab, setTab] = useTab();
+  const [tab, setTab] = useHashTab(TABS.map((t) => t.key));
   const [editingClient, setEditingClient] = useState(false);
 
   if (!client) {
@@ -121,11 +103,19 @@ export default function ClientProfilePage() {
             {client.dataSheetDate && `, data sheet from ${formatDate(client.dataSheetDate)}`}
           </p>
         </div>
-        {editable && (
-          <Button variant="secondary" onClick={() => setEditingClient(true)}>
-            <Pencil size={15} /> Edit household
-          </Button>
-        )}
+        <div className="flex flex-wrap gap-2">
+          {editable && (
+            <Button variant="secondary" onClick={() => setEditingClient(true)}>
+              <Pencil size={15} /> Edit household
+            </Button>
+          )}
+          <Link
+            href={`/clients/${client.id}/results`}
+            className="inline-flex h-9 items-center gap-2 rounded-md bg-brand px-4 text-sm font-medium text-white transition-colors hover:bg-brand-hover"
+          >
+            <BarChart3 size={15} /> Plan results
+          </Link>
+        </div>
       </header>
 
       <dl className="grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-line bg-line md:grid-cols-4">
