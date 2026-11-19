@@ -4,13 +4,13 @@ import { useEffect, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { Eye, EyeOff } from "lucide-react";
 import { useAuth } from "@/lib/auth";
-import { DEMO_PASSWORD } from "@/lib/sample-data";
+import { DEMO_PASSWORD } from "@/data/sample-data";
 import { ROLE_LABEL, ROLE_SUMMARY } from "@/lib/roles";
 import { Button } from "@/components/ui/button";
 import { Field, Input } from "@/components/ui/form";
 import { Avatar } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Logo } from "@/components/shell/logo";
+import { Logo } from "@/components/layout/logo";
 
 function nextPath(): string {
   const next = new URLSearchParams(window.location.search).get("next");

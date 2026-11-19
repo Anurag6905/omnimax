@@ -8,7 +8,7 @@ const nextConfig: NextConfig = {
   transpilePackages: ["@omnimax/shared", "@omnimax/engine"],
   turbopack: {
     // Monorepo: dependencies are installed at the repo root.
-    root: path.join(__dirname, "..", ".."),
+    root: path.join(__dirname, ".."),
     rules: {
       "*.css": {
         loaders: ["@tailwindcss/turbopack"],

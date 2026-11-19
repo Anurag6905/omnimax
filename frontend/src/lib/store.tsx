@@ -2,7 +2,7 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import type { FamilyMember } from "@omnimax/shared";
-import { SAMPLE_CLIENTS, SAMPLE_MEMBERS, type ClientRecord } from "./sample-data";
+import { SAMPLE_CLIENTS, SAMPLE_MEMBERS, type ClientRecord } from "@/data/sample-data";
 
 /**
  * Phase 1A client data store: sample data in memory, saved to this browser so

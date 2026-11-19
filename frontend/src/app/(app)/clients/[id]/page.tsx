@@ -19,7 +19,7 @@ import { can } from "@/lib/roles";
 import { useClientStore } from "@/lib/store";
 import { ageFromDob, formatDate, yearAtAge } from "@/lib/format";
 import { cn } from "@/lib/cn";
-import type { ClientRecord } from "@/lib/sample-data";
+import type { ClientRecord } from "@/data/sample-data";
 
 const TABS = [
   { key: "family", label: "Family" },

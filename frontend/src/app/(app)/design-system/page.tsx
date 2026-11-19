@@ -9,7 +9,7 @@ import { Field, Input, Select } from "@/components/ui/form";
 import { Dialog } from "@/components/ui/dialog";
 import { Avatar } from "@/components/ui/avatar";
 import { Lifeline } from "@/components/clients/lifeline";
-import { SAMPLE_MEMBERS } from "@/lib/sample-data";
+import { SAMPLE_MEMBERS } from "@/data/sample-data";
 
 const COLOURS = [
   { name: "Ink", hex: "#14213D", use: "Headings and main text", cls: "bg-ink" },

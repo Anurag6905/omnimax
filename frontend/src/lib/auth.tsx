@@ -2,7 +2,7 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import type { User } from "@omnimax/shared";
-import { DEMO_PASSWORD, DEMO_USERS } from "./sample-data";
+import { DEMO_PASSWORD, DEMO_USERS } from "@/data/sample-data";
 
 /**
  * Phase 1A: demo sign-in only. Accounts live in sample-data.ts and the session

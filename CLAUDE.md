@@ -2,7 +2,7 @@
 
 Project: replacement for Omnimax, a financial planning tool used by Indian financial advisers (INR, SIPs, EPF/PPF/NPS).
 
-- Monorepo with npm workspaces: `apps/web` (Next.js, App Router, Tailwind, shadcn/ui, Recharts), `apps/api` (NestJS), `packages/shared` (types), `packages/engine` (calc engine).
+- Monorepo with npm workspaces: `frontend` (React with Next.js App Router, Tailwind; see frontend/README.md), `backend` (NestJS), `packages/shared` (types), `packages/engine` (calc engine).
 - Current phase is **1A: UI only, with sample data**. Do not build the calculation engine or real persistence until Phase 1B starts.
 - `db/schema.sql` is the data model. `packages/shared/src/index.ts` must stay in step with it.
 - Input screens follow the five tabs of `reference/2025-10-01_Client Data Gathering Sheet.xlsx`: Personal Details, Goals, Assets, Liabilities, Insurance.

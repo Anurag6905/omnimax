@@ -8,9 +8,8 @@ Web-based financial planning tool for advisers, replacing Omnimax. It keeps Omni
 
 ```
 omnimax/
-├── apps/
-│   ├── web/          Next.js + React + TypeScript + Tailwind  ← Phase 1A work happens here
-│   └── api/          NestJS backend (skeleton; wired up in Phase 1B)
+├── frontend/         React app (Next.js + TypeScript + Tailwind)  ← Phase 1A work happens here
+├── backend/          NestJS API (skeleton; wired up in Phase 1B)
 ├── packages/
 │   ├── shared/       TypeScript types that mirror the database tables
 │   └── engine/       Calculation engine (Phase 1B — empty for now)
@@ -34,14 +33,14 @@ omnimax/
 ```bash
 npm install                 # installs all apps and packages
 cp .env.example .env        # then edit passwords
-npm run dev                 # web app on http://localhost:3000
+npm run dev                 # frontend on http://localhost:3000
 ```
 
 Optional:
 
 ```bash
 npm run db:up               # PostgreSQL on localhost:5432, schema auto-loaded
-npm run dev:api             # API on http://localhost:3000 (set PORT=4000 to run beside web)
+npm run dev:backend         # API (set PORT=4000 to run beside the frontend)
 ```
 
 ## Phase plan
