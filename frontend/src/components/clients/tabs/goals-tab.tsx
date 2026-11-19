@@ -40,6 +40,7 @@ const GOAL_FIELDS: FieldDef[] = [
   { key: "loanAmount", label: "Loan amount, if any", type: "money", showIf: is("house", "car") },
   { key: "isWanted", label: "Client wants this goal", type: "yesno", showIf: is("other") },
   { key: "timeFrame", label: "Time frame", type: "text", showIf: is("other"), placeholder: "e.g. Within 3 years, 2030" },
+  { key: "inflationPct", label: "Inflation for this goal", type: "percent", hint: "Leave blank to use the plan's rate for this goal type (Assumptions tab)" },
   { key: "remark", label: "Remark", type: "text", wide: true },
 ];
 
@@ -111,7 +112,7 @@ export function GoalsTab({ clientId, members, editable }: TabProps) {
       cell: (g, c) => (
         <>
           <span className="font-medium">{g.name}</span>
-          <span className="block text-xs text-muted">{GOAL_TYPE_LABEL[g.goalType]}{g.memberId ? `, ${c.member(g.memberId)}` : ""}{g.isWanted === false ? ", not wanted" : ""}</span>
+          <span className="block text-xs text-muted">{GOAL_TYPE_LABEL[g.goalType]}{g.memberId ? `, ${c.member(g.memberId)}` : ""}{g.isWanted === false ? ", not wanted" : ""}{g.inflationPct != null ? `, ${g.inflationPct}% inflation` : ""}</span>
         </>
       ),
     },

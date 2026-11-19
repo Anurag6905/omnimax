@@ -22,7 +22,7 @@ const NAV: Array<{ group?: string; items: NavItem[] }> = [
   {
     group: "Planning",
     items: [
-      { href: "/assumptions", label: "Assumptions", icon: SlidersHorizontal, soon: true },
+      { href: "/assumptions", label: "Firm assumptions", icon: SlidersHorizontal },
       { href: "/scenarios", label: "What-if scenarios", icon: Split, soon: true },
       { href: "/results", label: "Results", icon: BarChart3, soon: true },
       { href: "/reports", label: "Reports", icon: FileText, soon: true },

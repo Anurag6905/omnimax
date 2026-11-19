@@ -18,6 +18,7 @@ const PERMISSION_LABEL: Record<Permission, string> = {
   "clients.reassign": "Change a client's adviser",
   "clients.delete": "Delete clients",
   "users.manage": "Manage staff and roles",
+  "assumptions.editFirm": "Change firm-wide assumptions",
 };
 
 export default function UsersPage() {

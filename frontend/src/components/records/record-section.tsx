@@ -46,6 +46,8 @@ type Errors = Record<string, string>;
 
 export interface CellContext {
   member: (id?: string) => string;
+  /** the full family member record, for dates such as retirement year */
+  person: (id?: string) => FamilyMember | undefined;
   goal: (id?: string) => string;
   links: (sourceId: string) => GoalFundingLink[];
 }
@@ -169,6 +171,7 @@ export function RecordSection<K extends RecordKind>(props: Props<K>) {
   const ctx: CellContext = useMemo(
     () => ({
       member: (id) => members.find((m) => m.id === id)?.fullName ?? "–",
+      person: (id) => members.find((m) => m.id === id),
       goal: (id) => goals.find((g) => g.id === id)?.name ?? "–",
       links: (sourceId) =>
         records.goalLinks

@@ -1,7 +1,7 @@
 -- =====================================================================
 -- Omnimax replacement — client data schema (PostgreSQL 16)
 -- Source of truth: "2025-10-01_Client Data Gathering Sheet.xlsx"
--- 13 tables: 2 foundation + 11 client data. See docs/database-schema.md.
+-- 16 tables: 2 foundation + 11 client data + 3 assumptions. See docs/database-schema.md.
 --
 -- Conventions
 --   * Primary keys: uuid (gen_random_uuid()).
@@ -86,7 +86,11 @@ CREATE TABLE incomes (
                      ('Salary (take home)','Bonus','Business (net profit)','Rental Income')),
     frequency      text NOT NULL CHECK (frequency IN ('Monthly','Half-Yearly','Annually')),
     amount         numeric(18,2) NOT NULL CHECK (amount >= 0),   -- amount per frequency period
-    annual_growth_pct numeric(7,4),                               -- not in sheet; needed for projections (Phase 1B)
+    annual_growth_pct numeric(7,4),                               -- project plan: yearly growth (not in sheet)
+    start_year     smallint,                                      -- NULL = already earning
+    end_rule       text CHECK (end_rule IN ('retirement','year','lifetime')), -- 'retirement' follows the earner's retirement age
+    end_year       smallint,                                      -- used when end_rule = 'year'
+    CHECK (end_rule IS DISTINCT FROM 'year' OR end_year IS NOT NULL),
     remark         text,
     created_at     timestamptz NOT NULL DEFAULT now(),
     updated_at     timestamptz NOT NULL DEFAULT now()
@@ -188,6 +192,9 @@ CREATE TABLE assets (
     employer_monthly_contribution numeric(18,2), -- EPF employer
     yearly_contribution      numeric(18,2),   -- gold / misc yearly investment
     annual_step_up_pct       numeric(7,4),    -- SIP yearly step-up (project requirement; not in sheet)
+    contribution_end_rule    text CHECK (contribution_end_rule IN ('retirement','year')), -- when SIP / contributions stop
+    contribution_end_year    smallint,        -- used when contribution_end_rule = 'year'
+    available_from_year      smallint,        -- project plan: first year it can fund goals (NULL = now)
     quantity                 numeric(18,4),   -- equity: quantity
     buy_price                numeric(18,4),   -- equity: buy price per unit
     remark                   text,
@@ -290,6 +297,43 @@ CREATE TABLE general_insurance_policies (
     updated_at          timestamptz NOT NULL DEFAULT now()
 );
 CREATE INDEX idx_general_client ON general_insurance_policies(client_id);
+
+-- ---------------------------------------------------------------------
+-- ASSUMPTIONS (project plan: returns by asset class and period,
+-- inflation by goal type, firm-wide defaults)
+-- ---------------------------------------------------------------------
+
+-- 14. assumption_sets — the firm default (client_id NULL) or one client's plan.
+--     A client's set only stores overrides; anything missing falls back to the firm default.
+CREATE TABLE assumption_sets (
+    id           uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    client_id    uuid UNIQUE REFERENCES clients(id) ON DELETE CASCADE,  -- NULL = firm default
+    updated_by   uuid REFERENCES users(id),
+    updated_at   timestamptz NOT NULL DEFAULT now()
+);
+CREATE UNIQUE INDEX uq_one_firm_default ON assumption_sets ((client_id IS NULL)) WHERE client_id IS NULL;
+
+-- 15. return_assumptions — expected return for an asset class over a period.
+--     Periods run in order; each ends at a year, at the main client's retirement, or never (last period).
+CREATE TABLE return_assumptions (
+    id           uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    set_id       uuid NOT NULL REFERENCES assumption_sets(id) ON DELETE CASCADE,
+    asset_class  text NOT NULL,
+    seq          smallint NOT NULL,                      -- 1, 2, 3… in time order
+    rate_pct     numeric(7,4) NOT NULL,
+    end_rule     text NOT NULL CHECK (end_rule IN ('year','retirement','open')),
+    end_year     smallint,
+    CHECK (end_rule <> 'year' OR end_year IS NOT NULL),
+    UNIQUE (set_id, asset_class, seq)
+);
+
+-- 16. inflation_assumptions — inflation per goal type (plus 'expenses' for household spending).
+CREATE TABLE inflation_assumptions (
+    set_id       uuid NOT NULL REFERENCES assumption_sets(id) ON DELETE CASCADE,
+    goal_type    text NOT NULL CHECK (goal_type IN ('expenses','retirement','education','marriage','vacation','house','car','other')),
+    rate_pct     numeric(7,4) NOT NULL,
+    PRIMARY KEY (set_id, goal_type)
+);
 
 -- ---------------------------------------------------------------------
 -- SEED: expense categories exactly as in the sheet

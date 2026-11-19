@@ -18,26 +18,30 @@ frontend/src/
 │       ├── clients/page.tsx          /clients – client list
 │       ├── clients/[id]/page.tsx     /clients/CL-… – client profile and tabs
 │       ├── admin/users/page.tsx      /admin/users – staff and roles
+│       ├── assumptions/page.tsx      /assumptions – firm-wide default assumptions
 │       └── design-system/page.tsx    /design-system – colours, type, parts
 │
 ├── components/               Reusable React components
 │   ├── ui/                   Basic parts: Button, Input, Select, Dialog, Badge…
 │   ├── layout/               App shell: sidebar, top bar, logo
 │   ├── records/              RecordSection: table + add/edit dialog used by every profile list
+│   ├── assumptions/          Returns by period, inflation, asset-class map (firm page + client tab)
 │   └── clients/              Client screens: forms, dialogs, life line
 │       └── tabs/             One file per profile tab: family, cashflow, goals, assets,
-│                             liabilities, insurance
+│                             liabilities, insurance, assumptions
 │
 ├── lib/                      Logic with no UI
 │   ├── auth.tsx              Sign-in state (demo accounts in Phase 1A)
 │   ├── store.tsx             Client data state (sample data in Phase 1A)
 │   ├── roles.ts              What each role may do
+│   ├── assumptions.ts        Which rate applies (firm or plan), retirement year, period checks
 │   ├── format.ts             Dates, ages, ₹ amounts
 │   └── cn.ts                 Class-name helper
 │
 └── data/
     ├── sample-data.ts        Fictional households used on every screen
-    └── sheet-lists.ts        Dropdown lists and section names from the client data sheet
+    ├── sheet-lists.ts        Dropdown lists and section names from the client data sheet
+    └── assumption-defaults.ts  Sample firm rates and the proposed asset-class mapping
 ```
 
 ## Conventions

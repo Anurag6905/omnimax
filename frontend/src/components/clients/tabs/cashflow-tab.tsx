@@ -2,13 +2,13 @@
 
 import { useState } from "react";
 import { Pencil } from "lucide-react";
-import { INCOME_FREQUENCIES, INCOME_TYPES, type Income } from "@omnimax/shared";
+import { INCOME_FREQUENCIES, INCOME_TYPES, type FamilyMember, type Income } from "@omnimax/shared";
 import { RecordSection, GoalLinksCell, type ColumnDef, type FieldDef } from "@/components/records/record-section";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/form";
 import { EXPENSE_CATEGORIES, EXPENSE_GROUP_LABEL } from "@/data/sheet-lists";
 import { useClientRecords, useClientStore } from "@/lib/store";
-import { formatINR } from "@/lib/format";
+import { formatINR, yearAtAge } from "@/lib/format";
 import type { TabProps } from "./types";
 
 /** Payments a year for each income frequency on the sheet. */
@@ -20,16 +20,42 @@ const INCOME_FIELDS: FieldDef[] = [
   { key: "incomeType", label: "Income type", type: "select", options: INCOME_TYPES, required: true },
   { key: "frequency", label: "Frequency", type: "select", options: INCOME_FREQUENCIES, required: true },
   { key: "amount", label: "Amount each time, after tax", type: "money", required: true },
+  { key: "annualGrowthPct", label: "Yearly growth", type: "percent", hint: "Expected yearly raise or rent increase" },
+  { key: "startYear", label: "Starts in", type: "year", hint: "Leave blank if already earning" },
+  {
+    key: "endRule", label: "Ends", type: "select", required: true,
+    options: [
+      { value: "retirement", label: "At the earner's retirement" },
+      { value: "year", label: "In a set year" },
+      { value: "lifetime", label: "Continues for life (e.g. rent, pension)" },
+    ],
+    hint: "\"At retirement\" moves automatically if the retirement age changes",
+  },
+  { key: "endYear", label: "Last year of this income", type: "year", required: true, showIf: (d) => d.endRule === "year" },
   { key: "remark", label: "Remark", type: "text", wide: true },
   { key: "goals", label: "Reserved for goals", type: "goals" },
 ];
 
-const INCOME_COLUMNS: Array<ColumnDef<Income>> = [
+/** "2026 – at retirement (2040)" in the earner's own dates. */
+function incomeYears(i: Income, members: FamilyMember[]): React.ReactNode {
+  const start = i.startYear ? String(i.startYear) : "Now";
+  if (i.endRule === "year") return `${start} – ${i.endYear}`;
+  if (i.endRule === "lifetime") return `${start} – for life`;
+  if (i.endRule === "retirement") {
+    const m = members.find((x) => x.id === i.memberId);
+    const y = yearAtAge(m?.dateOfBirth, m?.retirementAge);
+    return <>{start} – retirement<span className="block text-xs text-muted">{y ? `${y}, moves with retirement age` : "Set retirement age in Family"}</span></>;
+  }
+  return `${start} – not set`;
+}
+
+const incomeColumns = (members: FamilyMember[]): Array<ColumnDef<Income>> => [
   { label: "Earned by", cell: (r, c) => c.member(r.memberId) },
   { label: "Type", cell: (r) => <>{r.incomeType}{r.remark && <span className="block text-xs text-muted">{r.remark}</span>}</> },
   { label: "Frequency", cell: (r) => r.frequency },
   { label: "Amount", align: "right", cell: (r) => formatINR(r.amount) },
-  { label: "Per year", align: "right", cell: (r) => formatINR(perYear(r)), total: (rows) => rows.reduce((s, r) => s + perYear(r), 0) },
+  { label: "Per year", align: "right", cell: (r) => <>{formatINR(perYear(r))}{r.annualGrowthPct ? <span className="block text-xs text-muted">+{r.annualGrowthPct}% a year</span> : null}</>, total: (rows) => rows.reduce((s, r) => s + perYear(r), 0) },
+  { label: "Years", cell: (r) => incomeYears(r, members) },
   { label: "Reserved for", cell: (r, c) => <GoalLinksCell links={c.links(r.id)} goal={c.goal} /> },
 ];
 
@@ -45,8 +71,9 @@ export function CashflowTab({ clientId, members, editable }: TabProps) {
         noun="income"
         rows={incomes}
         fields={INCOME_FIELDS}
-        columns={INCOME_COLUMNS}
-        defaults={{ frequency: "Monthly" }}
+        columns={incomeColumns(members)}
+        defaults={{ frequency: "Monthly", endRule: "retirement" }}
+        validate={(d): Record<string, string> => (d.endRule === "year" && d.startYear && d.endYear && Number(d.endYear) < Number(d.startYear) ? { endYear: "Can't end before it starts." } : {})}
         funding="incomeId"
         editable={editable}
         members={members}

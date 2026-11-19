@@ -13,6 +13,7 @@ export const PERMISSIONS = {
   "clients.reassign": ["operations", "admin"],
   "clients.delete": ["admin"],
   "users.manage": ["admin"],
+  "assumptions.editFirm": ["admin"],
 } as const satisfies Record<string, readonly Role[]>;
 
 export type Permission = keyof typeof PERMISSIONS;

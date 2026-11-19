@@ -53,8 +53,14 @@ export interface FamilyMember {
 
 export interface Income {
   id: UUID; clientId: UUID; memberId: UUID; incomeType: IncomeType;
-  frequency: IncomeFrequency; amount: number; annualGrowthPct?: number; remark?: string;
+  frequency: IncomeFrequency; amount: number; annualGrowthPct?: number;
+  /** first year of this income; undefined = already earning */
+  startYear?: number;
+  /** 'retirement' follows the earner's retirement age, so a what-if moves it */
+  endRule?: EndRule; endYear?: number; remark?: string;
 }
+
+export type EndRule = 'retirement' | 'year' | 'lifetime';
 
 export interface ExpenseCategory { id: number; groupName: 'Household' | 'Lifestyle' | 'Misc'; name: string; sortOrder: number }
 export interface Expense { id: UUID; clientId: UUID; categoryId: number; monthlyAmount: number; remark?: string }
@@ -74,6 +80,10 @@ export interface Asset {
   maturityDate?: ISODate; maturityValue?: number; interestRatePct?: number; compounding?: string;
   expectedGrowthPct?: number; monthlyContribution?: number; employerMonthlyContribution?: number;
   yearlyContribution?: number; annualStepUpPct?: number; quantity?: number; buyPrice?: number; remark?: string;
+  /** when the SIP / contributions stop; 'retirement' follows the owner's retirement age */
+  contributionEndRule?: 'retirement' | 'year'; contributionEndYear?: number;
+  /** first year it can be used to fund goals; undefined = now */
+  availableFromYear?: number;
 }
 
 /** "Priority Goal 1/2/3" for an investment or income stream (Input_Allocations.py). */
@@ -102,4 +112,22 @@ export interface GeneralInsurancePolicy {
   id: UUID; clientId: UUID; insuredMemberId?: UUID; policyName: string;
   coverType?: (typeof GENERAL_COVER_TYPES)[number]; policyType?: (typeof GENERAL_POLICY_TYPES)[number];
   commencementDate?: ISODate; sumAssured?: number; annualPremium?: number; tenureYears?: number; renewalDate?: ISODate;
+}
+
+// ---- assumptions (db: assumption_sets, return_assumptions, inflation_assumptions) ----
+
+/** A return period ends at a year, at the main client's retirement, or never (the last period). */
+export interface ReturnPeriod { ratePct: number; endRule: 'year' | 'retirement' | 'open'; endYear?: number }
+export interface ReturnAssumption { assetClass: string; periods: ReturnPeriod[] }
+
+/** 'expenses' = household spending; the rest are goal types. */
+export type InflationKey = 'expenses' | GoalType;
+
+export interface AssumptionSet {
+  /** undefined = the firm default */
+  clientId?: UUID;
+  returns: ReturnAssumption[];
+  inflation: Partial<Record<InflationKey, number>>;
+  updatedAt?: string;
+  updatedBy?: UUID;
 }

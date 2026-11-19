@@ -2,6 +2,14 @@
 
 Newest first. One entry per decision: what, why, alternatives.
 
+## 2026-11-19 — Assumptions and retirement-linked dates
+- Checked the screens against `Omnimax_Reverse_Project_Plan.docx` and `Omnimax Problem Analysis.docx`; added the inputs the plan lists that the data sheet lacks.
+- **Returns are set per asset class over periods**, once per plan (problem 1). A period ends in a set year, at the main client's retirement, or runs to the end. Stored as `return_assumptions` rows.
+- **A client's plan stores only overrides.** Anything not overridden falls back to the firm default, so changing a firm rate reaches every plan that hasn't changed it (CWA's one-file-per-client problem).
+- **Dates tied to retirement are stored as a rule, not a year** (`end_rule = 'retirement'`), so changing a retirement age moves salary end, SIP stop, retirement goal start and return switches together (problems 1 and 12). The Assumptions tab lists them.
+- **Inflation per goal type**, with an optional per-goal override (problem 9).
+- Firm rates are labelled as samples on screen; the asset-section-to-asset-class mapping is labelled as a proposal.
+
 ## 2026-11-19 — Profile tabs
 - **One reusable `RecordSection` component** (`frontend/src/components/records/record-section.tsx`) draws every list on the profile: a table, an add/edit dialog, validation, totals and goal reservations. Each tab only describes its fields and columns. Reason: 14 sections with the same behaviour; one place to fix bugs.
 - Expenses and credit cards are fixed question sets, so they have their own small panels instead.

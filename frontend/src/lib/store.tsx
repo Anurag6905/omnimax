@@ -2,10 +2,11 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import type {
-  Asset, CreditCardProfile, Expense, FamilyMember, GeneralInsurancePolicy, Goal, GoalFundingLink,
+  Asset, AssumptionSet, CreditCardProfile, Expense, FamilyMember, GeneralInsurancePolicy, Goal, GoalFundingLink,
   Income, Liability, LifeInsurancePolicy,
 } from "@omnimax/shared";
 import { SAMPLE_CLIENTS, SAMPLE_MEMBERS, SAMPLE_RECORDS, type ClientRecord } from "@/data/sample-data";
+import { SAMPLE_FIRM_ASSUMPTIONS } from "@/data/assumption-defaults";
 
 /**
  * Phase 1A client data store: sample data in memory, saved to this browser so
@@ -47,11 +48,17 @@ interface StoreState {
   /** Replace a client's monthly expenses (category id → amount). */
   setExpenses: (clientId: string, amounts: Record<number, number | undefined>) => void;
   saveCreditCard: (profile: CreditCardProfile) => void;
+  /** firm-wide default assumptions */
+  firmAssumptions: AssumptionSet;
+  setFirmAssumptions: (set: AssumptionSet) => void;
+  /** per-client overrides (only what differs from the firm default) */
+  planAssumptions: AssumptionSet[];
+  setPlanAssumptions: (clientId: string, set: AssumptionSet | undefined) => void;
   resetSampleData: () => void;
 }
 
 const StoreContext = createContext<StoreState | null>(null);
-const KEY = "omx.data.v2";
+const KEY = "omx.data.v3";
 const now = () => new Date().toISOString();
 export const newId = (p: string) => `${p}-${Math.random().toString(36).slice(2, 10)}`;
 const idOf = (r: object) => ("id" in r ? (r as { id: string }).id : (r as { clientId: string }).clientId);
@@ -60,17 +67,24 @@ export function ClientStoreProvider({ children }: { children: ReactNode }) {
   const [clients, setClients] = useState<ClientRecord[]>(SAMPLE_CLIENTS);
   const [members, setMembers] = useState<FamilyMember[]>(SAMPLE_MEMBERS);
   const [records, setRecords] = useState<RecordMap>(SAMPLE_RECORDS);
+  const [firmAssumptions, setFirm] = useState<AssumptionSet>(SAMPLE_FIRM_ASSUMPTIONS);
+  const [planAssumptions, setPlans] = useState<AssumptionSet[]>([]);
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
     try {
       const saved = localStorage.getItem(KEY);
       if (saved) {
-        const data = JSON.parse(saved) as { clients: ClientRecord[]; members: FamilyMember[]; records: Partial<RecordMap> };
+        const data = JSON.parse(saved) as {
+          clients: ClientRecord[]; members: FamilyMember[]; records: Partial<RecordMap>;
+          firmAssumptions?: AssumptionSet; planAssumptions?: AssumptionSet[];
+        };
         /* eslint-disable react-hooks/set-state-in-effect */
         setClients(data.clients);
         setMembers(data.members);
         setRecords({ ...SAMPLE_RECORDS, ...data.records });
+        if (data.firmAssumptions) setFirm(data.firmAssumptions);
+        if (data.planAssumptions) setPlans(data.planAssumptions);
       }
     } catch {}
     setLoaded(true);
@@ -80,9 +94,9 @@ export function ClientStoreProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!loaded) return;
     try {
-      localStorage.setItem(KEY, JSON.stringify({ clients, members, records }));
+      localStorage.setItem(KEY, JSON.stringify({ clients, members, records, firmAssumptions, planAssumptions }));
     } catch {}
-  }, [clients, members, records, loaded]);
+  }, [clients, members, records, firmAssumptions, planAssumptions, loaded]);
 
   const touch = useCallback((clientId: string) => {
     setClients((list) => list.map((c) => (c.id === clientId ? { ...c, updatedAt: now() } : c)));
@@ -189,18 +203,38 @@ export function ClientStoreProvider({ children }: { children: ReactNode }) {
     touch(profile.clientId);
   }, [touch]);
 
+  const setFirmAssumptions = useCallback((set: AssumptionSet) => {
+    setFirm({ ...set, clientId: undefined, updatedAt: now() });
+  }, []);
+
+  const setPlanAssumptions = useCallback(
+    (clientId: string, set: AssumptionSet | undefined) => {
+      setPlans((list) => {
+        const others = list.filter((p) => p.clientId !== clientId);
+        const empty = !set || (!set.returns.length && !Object.values(set.inflation).some((v) => v != null));
+        return empty ? others : [...others, { ...set, clientId, updatedAt: now() }];
+      });
+      touch(clientId);
+    },
+    [touch],
+  );
+
   const resetSampleData = useCallback(() => {
     setClients(SAMPLE_CLIENTS);
     setMembers(SAMPLE_MEMBERS);
     setRecords(SAMPLE_RECORDS);
+    setFirm(SAMPLE_FIRM_ASSUMPTIONS);
+    setPlans([]);
   }, []);
 
   const value = useMemo(
     () => ({
       clients, members, records, addClient, updateClient, saveMember, removeMember,
-      saveRecord, removeRecord, setGoalLinks, setExpenses, saveCreditCard, resetSampleData,
+      saveRecord, removeRecord, setGoalLinks, setExpenses, saveCreditCard,
+      firmAssumptions, setFirmAssumptions, planAssumptions, setPlanAssumptions, resetSampleData,
     }),
-    [clients, members, records, addClient, updateClient, saveMember, removeMember, saveRecord, removeRecord, setGoalLinks, setExpenses, saveCreditCard, resetSampleData],
+    [clients, members, records, addClient, updateClient, saveMember, removeMember, saveRecord, removeRecord, setGoalLinks, setExpenses, saveCreditCard,
+      firmAssumptions, setFirmAssumptions, planAssumptions, setPlanAssumptions, resetSampleData],
   );
   return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>;
 }

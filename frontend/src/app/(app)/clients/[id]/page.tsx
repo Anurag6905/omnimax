@@ -15,6 +15,7 @@ import { GoalsTab } from "@/components/clients/tabs/goals-tab";
 import { AssetsTab } from "@/components/clients/tabs/assets-tab";
 import { LiabilitiesTab } from "@/components/clients/tabs/liabilities-tab";
 import { InsuranceTab } from "@/components/clients/tabs/insurance-tab";
+import { AssumptionsTab } from "@/components/clients/tabs/assumptions-tab";
 import type { TabProps } from "@/components/clients/tabs/types";
 import { useAuth } from "@/lib/auth";
 import { can } from "@/lib/roles";
@@ -31,6 +32,7 @@ const TABS: Array<{ key: string; label: string; Component: (p: TabProps) => Reac
   { key: "assets", label: "Assets", Component: AssetsTab },
   { key: "liabilities", label: "Liabilities", Component: LiabilitiesTab },
   { key: "insurance", label: "Insurance", Component: InsuranceTab },
+  { key: "assumptions", label: "Assumptions", Component: AssumptionsTab },
 ];
 
 /** Keep the open tab in the URL (#goals) so a refresh or shared link opens the same tab. */
@@ -55,7 +57,7 @@ function useTab(): [string, (k: string) => void] {
 export default function ClientProfilePage() {
   const { id } = useParams<{ id: string }>();
   const { user, users } = useAuth();
-  const { members, records } = useClientStore();
+  const { members, records, planAssumptions } = useClientStore();
   const visible = useVisibleClients();
   const client = visible.find((c) => c.id === id);
   const [tab, setTab] = useTab();
@@ -93,6 +95,10 @@ export default function ClientProfilePage() {
     assets: mine(records.assets).length,
     liabilities: mine(records.liabilities).length,
     insurance: mine(records.lifePolicies).length + mine(records.generalPolicies).length,
+    assumptions: (() => {
+      const p = planAssumptions.find((x) => x.clientId === client.id);
+      return p ? p.returns.length + Object.values(p.inflation).filter((v) => v != null).length : 0;
+    })(),
   };
   const Active = TABS.find((t) => t.key === tab)!.Component;
 
@@ -155,7 +161,11 @@ export default function ClientProfilePage() {
                 )}
               >
                 {t.label}
-                <span className={cn("rounded-full px-1.5 text-[11px]", active ? "bg-brand-50 text-brand" : "bg-surface text-faint")}>{counts[t.key]}</span>
+                {t.key === "assumptions" ? (
+                  counts.assumptions ? <span className={cn("rounded-full px-1.5 text-[11px]", active ? "bg-brand-50 text-brand" : "bg-surface text-faint")} title="Rates changed for this plan">{counts.assumptions} changed</span> : null
+                ) : (
+                  <span className={cn("rounded-full px-1.5 text-[11px]", active ? "bg-brand-50 text-brand" : "bg-surface text-faint")}>{counts[t.key]}</span>
+                )}
               </button>
             );
           })}

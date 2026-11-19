@@ -62,10 +62,10 @@ export const SAMPLE_MEMBERS: FamilyMember[] = rows.map(([, m], i) => ({
 const C = "c-1";
 export const SAMPLE_RECORDS: RecordMap = {
   incomes: [
-    { id: "in-1", clientId: C, memberId: "m-1", incomeType: "Salary (take home)", frequency: "Monthly", amount: 210000 },
-    { id: "in-2", clientId: C, memberId: "m-1", incomeType: "Bonus", frequency: "Annually", amount: 400000 },
-    { id: "in-3", clientId: C, memberId: "m-2", incomeType: "Salary (take home)", frequency: "Monthly", amount: 140000 },
-    { id: "in-4", clientId: C, memberId: "m-2", incomeType: "Rental Income", frequency: "Monthly", amount: 25000, remark: "Flat in Wakad, let out" },
+    { id: "in-1", clientId: C, memberId: "m-1", incomeType: "Salary (take home)", frequency: "Monthly", amount: 210000, annualGrowthPct: 7, endRule: "retirement" },
+    { id: "in-2", clientId: C, memberId: "m-1", incomeType: "Bonus", frequency: "Annually", amount: 400000, annualGrowthPct: 5, endRule: "retirement" },
+    { id: "in-3", clientId: C, memberId: "m-2", incomeType: "Salary (take home)", frequency: "Monthly", amount: 140000, annualGrowthPct: 7, endRule: "retirement" },
+    { id: "in-4", clientId: C, memberId: "m-2", incomeType: "Rental Income", frequency: "Monthly", amount: 25000, annualGrowthPct: 5, endRule: "lifetime", remark: "Flat in Wakad, let out" },
   ],
   expenses: [
     [1, 18000], [2, 2500], [3, 6000], [4, 8000], [5, 5000], [6, 1500], [7, 9000], [8, 2000], [9, 800],
@@ -73,7 +73,7 @@ export const SAMPLE_RECORDS: RecordMap = {
   ].map(([categoryId, monthlyAmount]) => ({ id: `ex-${categoryId}`, clientId: C, categoryId, monthlyAmount })),
   goals: [
     { id: "g-1", clientId: C, memberId: "m-1", goalType: "retirement", name: "Rahul – retirement", priorityLevel: "High", priorityRank: 1, currentMonthlyExpenses: 120000 },
-    { id: "g-2", clientId: C, memberId: "m-3", goalType: "education", name: "Aarav – engineering", priorityLevel: "High", priorityRank: 2, startAge: 18, tenureYears: 4, costToday: 600000 },
+    { id: "g-2", clientId: C, memberId: "m-3", goalType: "education", name: "Aarav – engineering", priorityLevel: "High", priorityRank: 2, startAge: 18, tenureYears: 4, costToday: 600000, inflationPct: 11 },
     { id: "g-3", clientId: C, goalType: "house", name: "Dream House", priorityLevel: "High", priorityRank: 3, startYear: 2032, costToday: 15000000, loanAmount: 9000000 },
     { id: "g-4", clientId: C, goalType: "car", name: "Decent Car", priorityLevel: "Medium", priorityRank: 4, startYear: 2028, costToday: 1500000, loanAmount: 0 },
     { id: "g-5", clientId: C, memberId: "m-3", goalType: "marriage", name: "Aarav – marriage", priorityLevel: "Medium", priorityRank: 5, startAge: 28, costToday: 2500000 },
@@ -86,13 +86,13 @@ export const SAMPLE_RECORDS: RecordMap = {
     { id: "a-3", clientId: C, ownerMemberId: "m-1", category: "cash_bank", subType: "Savings account", institution: "HDFC Bank", currentValue: 450000 },
     { id: "a-4", clientId: C, ownerMemberId: "m-2", category: "cash_bank", subType: "Savings account", institution: "ICICI Bank", currentValue: 180000 },
     { id: "a-5", clientId: C, ownerMemberId: "m-1", category: "fixed_income", subType: "FD", institution: "State Bank of India", investedAmount: 1000000, maturityValue: 1236000, startDate: "2024-03-15", maturityDate: "2027-03-15", interestRatePct: 7.1, compounding: "Quarterly" },
-    { id: "a-6", clientId: C, ownerMemberId: "m-1", category: "small_savings", subType: "PPF", investedAmount: 950000, startDate: "2015-04-01", maturityDate: "2031-04-01", maturityValue: 2400000, monthlyContribution: 12500 },
-    { id: "a-7", clientId: C, ownerMemberId: "m-2", category: "small_savings", subType: "NPS", investedAmount: 520000, startDate: "2019-07-01", monthlyContribution: 5000 },
-    { id: "a-8", clientId: C, ownerMemberId: "m-1", category: "retirement", subType: "EPF", currentValue: 1840000, valueAsOf: "2026-10-31", monthlyContribution: 21600, employerMonthlyContribution: 21600 },
-    { id: "a-9", clientId: C, ownerMemberId: "m-2", category: "gold_silver", subType: "SGB Bond", investedAmount: 300000, currentValue: 520000, yearlyContribution: 50000 },
+    { id: "a-6", clientId: C, ownerMemberId: "m-1", category: "small_savings", subType: "PPF", investedAmount: 950000, startDate: "2015-04-01", maturityDate: "2031-04-01", maturityValue: 2400000, monthlyContribution: 12500, contributionEndRule: "year", contributionEndYear: 2031, availableFromYear: 2031 },
+    { id: "a-7", clientId: C, ownerMemberId: "m-2", category: "small_savings", subType: "NPS", investedAmount: 520000, startDate: "2019-07-01", monthlyContribution: 5000, contributionEndRule: "retirement", availableFromYear: 2048 },
+    { id: "a-8", clientId: C, ownerMemberId: "m-1", category: "retirement", subType: "EPF", currentValue: 1840000, valueAsOf: "2026-10-31", monthlyContribution: 21600, employerMonthlyContribution: 21600, contributionEndRule: "retirement", availableFromYear: 2040 },
+    { id: "a-9", clientId: C, ownerMemberId: "m-2", category: "gold_silver", subType: "SGB Bond", investedAmount: 300000, currentValue: 520000, yearlyContribution: 50000, contributionEndRule: "year", contributionEndYear: 2030 },
     { id: "a-10", clientId: C, ownerMemberId: "m-1", category: "miscellaneous", subType: "Unlisted shares (ESOP)", investedAmount: 200000, currentValue: 650000, expectedGrowthPct: 10 },
-    { id: "a-11", clientId: C, ownerMemberId: "m-1", category: "mutual_fund", name: "Parag Parikh Flexi Cap Fund", assetClass: "Equity", currentValue: 1240000, monthlyContribution: 25000, annualStepUpPct: 10 },
-    { id: "a-12", clientId: C, ownerMemberId: "m-2", category: "mutual_fund", name: "HDFC Mid-Cap Opportunities Fund", assetClass: "Equity", currentValue: 680000, monthlyContribution: 15000 },
+    { id: "a-11", clientId: C, ownerMemberId: "m-1", category: "mutual_fund", name: "Parag Parikh Flexi Cap Fund", assetClass: "Equity", currentValue: 1240000, monthlyContribution: 25000, annualStepUpPct: 10, contributionEndRule: "retirement" },
+    { id: "a-12", clientId: C, ownerMemberId: "m-2", category: "mutual_fund", name: "HDFC Mid-Cap Opportunities Fund", assetClass: "Equity", currentValue: 680000, monthlyContribution: 15000, contributionEndRule: "retirement" },
     { id: "a-13", clientId: C, ownerMemberId: "m-1", category: "mutual_fund", name: "ICICI Prudential Corporate Bond Fund", assetClass: "Debt", currentValue: 410000 },
     { id: "a-14", clientId: C, ownerMemberId: "m-1", category: "equity", name: "HDFCBANK", quantity: 200, buyPrice: 1450, currentValue: 340000 },
     { id: "a-15", clientId: C, ownerMemberId: "m-1", category: "equity", name: "INFY", quantity: 150, buyPrice: 1380, currentValue: 270000 },

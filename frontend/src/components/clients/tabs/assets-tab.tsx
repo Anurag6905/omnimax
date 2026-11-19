@@ -1,13 +1,13 @@
 "use client";
 
 import type { Asset, AssetCategory } from "@omnimax/shared";
-import { RecordSection, GoalLinksCell, type ColumnDef, type Draft, type FieldDef } from "@/components/records/record-section";
+import { RecordSection, GoalLinksCell, type CellContext, type ColumnDef, type Draft, type FieldDef } from "@/components/records/record-section";
 import {
   ASSET_CLASS_SUGGESTIONS, ASSET_SECTIONS, CASH_TYPE_SUGGESTIONS, COMPOUNDING_OPTIONS, FIXED_INCOME_TYPES,
   GOLD_TYPES, PROPERTY_TYPES, RETIREMENT_ACCOUNT_TYPES, SMALL_SAVINGS_TYPES,
 } from "@/data/sheet-lists";
 import { useClientRecords } from "@/lib/store";
-import { formatDate, formatINR, formatPct } from "@/lib/format";
+import { formatDate, formatINR, formatPct, yearAtAge } from "@/lib/format";
 import type { TabProps } from "./types";
 
 /**
@@ -22,7 +22,42 @@ const remark: FieldDef = { key: "remark", label: "Remark", type: "text", wide: t
 const sum = (pick: (a: Asset) => number | undefined) => (rows: Asset[]) => rows.reduce((s, a) => s + (pick(a) ?? 0), 0);
 const money = (pick: (a: Asset) => number | undefined) => (a: Asset) => formatINR(pick(a));
 const ownerCol = (label: string): ColumnDef<Asset> => ({ label, cell: (a, c) => c.member(a.ownerMemberId) });
-const reservedCol: ColumnDef<Asset> = { label: "Reserved for", cell: (a, c) => <GoalLinksCell links={c.links(a.id)} goal={c.goal} /> };
+const reservedCol: ColumnDef<Asset> = {
+  label: "Reserved for",
+  cell: (a, c) => (
+    <>
+      <GoalLinksCell links={c.links(a.id)} goal={c.goal} />
+      {a.availableFromYear ? <span className="block text-xs text-muted">Usable from {a.availableFromYear}</span> : null}
+    </>
+  ),
+};
+
+/** Project plan: the year an asset can first fund goals (e.g. PPF lock-in). */
+const usableFrom: FieldDef = { key: "availableFromYear", label: "Can be used for goals from", type: "year", hint: "Leave blank if usable now, e.g. 2031 for a PPF lock-in" };
+
+/** Project plan: SIPs and contributions stop at retirement, and move with it. */
+const hasContribution = (d: Draft) => !!(d.monthlyContribution || d.yearlyContribution || d.employerMonthlyContribution);
+const contributionEnd: FieldDef[] = [
+  {
+    key: "contributionEndRule", label: "Contributions stop", type: "select", required: true, showIf: hasContribution,
+    options: [{ value: "retirement", label: "At the owner's retirement" }, { value: "year", label: "In a set year" }],
+    hint: "\"At retirement\" moves automatically if the retirement age changes",
+  },
+  { key: "contributionEndYear", label: "Last year of contributions", type: "year", required: true, showIf: (d) => hasContribution(d) && d.contributionEndRule === "year" },
+];
+const HAS_CONTRIBUTIONS: AssetCategory[] = ["small_savings", "retirement", "gold_silver", "miscellaneous", "mutual_fund"];
+
+/** "till retirement, 2040" / "till 2031" under a contribution amount. */
+function stops(a: Asset, c: CellContext): React.ReactNode {
+  if (!a.monthlyContribution && !a.yearlyContribution && !a.employerMonthlyContribution) return null;
+  if (a.contributionEndRule === "year") return <span className="block text-xs text-muted">till {a.contributionEndYear}</span>;
+  if (a.contributionEndRule === "retirement") {
+    const p = c.person(a.ownerMemberId);
+    const y = yearAtAge(p?.dateOfBirth, p?.retirementAge);
+    return <span className="block text-xs text-muted">till retirement{y ? `, ${y}` : ""}</span>;
+  }
+  return null;
+}
 
 /** "01-Apr-2015 – 01-Apr-2031", or just the start when there's no maturity date. */
 function span(start?: string, end?: string): string {
@@ -112,7 +147,7 @@ const SECTIONS: Record<AssetCategory, { fields: FieldDef[]; columns: Array<Colum
       ownerCol("Investor"),
       { label: "Account", cell: (a) => a.subType },
       { label: "Principal", align: "right", cell: money((a) => a.investedAmount), total: sum((a) => a.investedAmount) },
-      { label: "Per month", align: "right", cell: money((a) => a.monthlyContribution), total: sum((a) => a.monthlyContribution) },
+      { label: "Per month", align: "right", cell: (a, c) => <>{formatINR(a.monthlyContribution)}{stops(a, c)}</>, total: sum((a) => a.monthlyContribution) },
       { label: "Start – maturity", cell: (a) => span(a.startDate, a.maturityDate) },
       { label: "Maturity value", align: "right", cell: money((a) => a.maturityValue) },
       reservedCol,
@@ -134,7 +169,7 @@ const SECTIONS: Record<AssetCategory, { fields: FieldDef[]; columns: Array<Colum
       ownerCol("Owner"),
       { label: "Account", cell: (a) => a.subType },
       { label: "Balance", align: "right", cell: (a) => <>{formatINR(a.currentValue)}<span className="block text-xs text-muted">as on {formatDate(a.valueAsOf)}</span></>, total: sum((a) => a.currentValue) },
-      { label: "Employee / month", align: "right", cell: money((a) => a.monthlyContribution) },
+      { label: "Employee / month", align: "right", cell: (a, c) => <>{formatINR(a.monthlyContribution)}{stops(a, c)}</> },
       { label: "Employer / month", align: "right", cell: money((a) => a.employerMonthlyContribution) },
       reservedCol,
     ],
@@ -153,7 +188,7 @@ const SECTIONS: Record<AssetCategory, { fields: FieldDef[]; columns: Array<Colum
       { label: "Type", cell: (a) => a.subType },
       { label: "Principal", align: "right", cell: money((a) => a.investedAmount) },
       { label: "Current value", align: "right", cell: money((a) => a.currentValue), total: sum((a) => a.currentValue) },
-      { label: "Yearly investment", align: "right", cell: money((a) => a.yearlyContribution) },
+      { label: "Yearly investment", align: "right", cell: (a, c) => <>{formatINR(a.yearlyContribution)}{stops(a, c)}</> },
       reservedCol,
     ],
   },
@@ -172,7 +207,7 @@ const SECTIONS: Record<AssetCategory, { fields: FieldDef[]; columns: Array<Colum
       { label: "Type", cell: (a) => a.subType },
       { label: "Principal", align: "right", cell: money((a) => a.investedAmount) },
       { label: "Current value", align: "right", cell: money((a) => a.currentValue), total: sum((a) => a.currentValue) },
-      { label: "Yearly investment", align: "right", cell: money((a) => a.yearlyContribution) },
+      { label: "Yearly investment", align: "right", cell: (a, c) => <>{formatINR(a.yearlyContribution)}{stops(a, c)}</> },
       { label: "Expected growth", align: "right", cell: (a) => formatPct(a.expectedGrowthPct) },
       reservedCol,
     ],
@@ -191,7 +226,7 @@ const SECTIONS: Record<AssetCategory, { fields: FieldDef[]; columns: Array<Colum
       ownerCol("Holder"),
       { label: "Scheme", cell: (a) => <>{a.name}<span className="block text-xs text-muted">{a.assetClass}</span></> },
       { label: "Market value", align: "right", cell: money((a) => a.currentValue), total: sum((a) => a.currentValue) },
-      { label: "SIP / month", align: "right", cell: (a) => <>{formatINR(a.monthlyContribution)}{a.annualStepUpPct ? <span className="block text-xs text-muted">+{a.annualStepUpPct}% a year</span> : null}</>, total: sum((a) => a.monthlyContribution) },
+      { label: "SIP / month", align: "right", cell: (a, c) => <>{formatINR(a.monthlyContribution)}{a.annualStepUpPct ? <span className="block text-xs text-muted">+{a.annualStepUpPct}% a year</span> : null}{stops(a, c)}</>, total: sum((a) => a.monthlyContribution) },
       reservedCol,
     ],
   },
@@ -233,7 +268,12 @@ export function AssetsTab({ clientId, members, editable }: TabProps) {
             title={title}
             noun={noun}
             rows={assets.filter((a) => a.category === category)}
-            fields={s.fields}
+            fields={[
+              ...s.fields.slice(0, -1),
+              ...(HAS_CONTRIBUTIONS.includes(category) ? contributionEnd : []),
+              usableFrom,
+              s.fields.at(-1)!, // "Reserved for goals" stays last
+            ]}
             columns={s.columns}
             validate={s.validate}
             fixed={{ category }}
