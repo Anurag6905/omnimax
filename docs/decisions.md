@@ -2,6 +2,14 @@
 
 Newest first. One entry per decision: what, why, alternatives.
 
+## 2026-11-19 — Profile tabs
+- **One reusable `RecordSection` component** (`frontend/src/components/records/record-section.tsx`) draws every list on the profile: a table, an add/edit dialog, validation, totals and goal reservations. Each tab only describes its fields and columns. Reason: 14 sections with the same behaviour; one place to fix bugs.
+- Expenses and credit cards are fixed question sets, so they have their own small panels instead.
+- **Goal reservations** are edited on the asset or income ("Priority goal 1/2/3"), matching the Investments sheet that `Input_Allocations.py` reads, and shown in reverse on the Goals tab.
+- Health status lives on family members (as in the schema) and is shown read-only on the Insurance tab.
+- Only sums appear on screen (column totals, education annual cost × years, monthly × 12, as the sheet does). No growth, inflation or funding is calculated in Phase 1A.
+- Profile tab is kept in the URL hash (`#goals`) so refresh and shared links open the same tab.
+
 ## 2026-11-19 — Phase 1A front end foundations
 - **Look:** white theme, navy ink text (#14213D), one accent, ledger green (#0F6B5C). IBM Plex Sans with even-width figures so amounts line up. Borders rather than shadows. Tokens live in `globals.css`; `/design-system` shows them.
 - **Own small components** instead of a UI kit: Button, Input, Select, Field, Badge, Dialog, Avatar, Panel. Fewer dependencies and they match the tokens exactly. shadcn/ui can still be added later.

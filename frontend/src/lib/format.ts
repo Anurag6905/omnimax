@@ -35,6 +35,34 @@ export function formatRelative(iso: string, now: Date = new Date()): string {
   return formatDate(iso.slice(0, 10));
 }
 
+const inr = new Intl.NumberFormat("en-IN", { maximumFractionDigits: 0 });
+
+/** ₹ 1,24,50,000 – Indian digit grouping, whole rupees for display only. */
+export function formatINR(n?: number | null): string {
+  if (n == null || Number.isNaN(n)) return "–";
+  return `₹ ${inr.format(n)}`;
+}
+
+/** Short form for tight spaces: ₹ 1.25 Cr, ₹ 4.5 L. */
+export function formatINRShort(n?: number | null): string {
+  if (n == null || Number.isNaN(n)) return "–";
+  const abs = Math.abs(n);
+  if (abs >= 1e7) return `₹ ${(n / 1e7).toFixed(2).replace(/\.?0+$/, "")} Cr`;
+  if (abs >= 1e5) return `₹ ${(n / 1e5).toFixed(2).replace(/\.?0+$/, "")} L`;
+  return formatINR(n);
+}
+
+export function formatPct(n?: number | null): string {
+  return n == null ? "–" : `${n}%`;
+}
+
+/** "2032-03-01" → "Mar-2032" (the sheet's mmm-yyyy). */
+export function formatMonth(iso?: string): string {
+  if (!iso) return "–";
+  const [y, m] = iso.split("-").map(Number);
+  return y && m ? `${MONTHS[m - 1]}-${y}` : "–";
+}
+
 export function initials(name: string): string {
   const parts = name.trim().split(/\s+/);
   return ((parts[0]?.[0] ?? "") + (parts.length > 1 ? parts[parts.length - 1][0] : "")).toUpperCase();

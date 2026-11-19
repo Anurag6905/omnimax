@@ -23,7 +23,10 @@ frontend/src/
 ├── components/               Reusable React components
 │   ├── ui/                   Basic parts: Button, Input, Select, Dialog, Badge…
 │   ├── layout/               App shell: sidebar, top bar, logo
-│   └── clients/              Client screens: forms, dialogs, life line, profile tabs
+│   ├── records/              RecordSection: table + add/edit dialog used by every profile list
+│   └── clients/              Client screens: forms, dialogs, life line
+│       └── tabs/             One file per profile tab: family, cashflow, goals, assets,
+│                             liabilities, insurance
 │
 ├── lib/                      Logic with no UI
 │   ├── auth.tsx              Sign-in state (demo accounts in Phase 1A)
@@ -33,7 +36,8 @@ frontend/src/
 │   └── cn.ts                 Class-name helper
 │
 └── data/
-    └── sample-data.ts        Fictional households used on every screen
+    ├── sample-data.ts        Fictional households used on every screen
+    └── sheet-lists.ts        Dropdown lists and section names from the client data sheet
 ```
 
 ## Conventions

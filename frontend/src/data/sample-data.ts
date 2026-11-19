@@ -1,4 +1,5 @@
 import type { Client, FamilyMember, User } from "@omnimax/shared";
+import type { RecordMap } from "@/lib/store";
 
 /** Sample data for Phase 1A screens. Fictional people only — never real clients. */
 
@@ -52,3 +53,71 @@ export const SAMPLE_MEMBERS: FamilyMember[] = rows.map(([, m], i) => ({
   sortOrder: i,
   lifeExpectancy: m.lifeExpectancy ?? 85, // sheet default
 }));
+
+/**
+ * Sample records for the Sharma family (c-1), covering every section of the
+ * data sheet. Other households start empty so the empty states can be reviewed.
+ * Member ids: m-1 Rahul, m-2 Neha, m-3 Aarav, m-4 Kamla.
+ */
+const C = "c-1";
+export const SAMPLE_RECORDS: RecordMap = {
+  incomes: [
+    { id: "in-1", clientId: C, memberId: "m-1", incomeType: "Salary (take home)", frequency: "Monthly", amount: 210000 },
+    { id: "in-2", clientId: C, memberId: "m-1", incomeType: "Bonus", frequency: "Annually", amount: 400000 },
+    { id: "in-3", clientId: C, memberId: "m-2", incomeType: "Salary (take home)", frequency: "Monthly", amount: 140000 },
+    { id: "in-4", clientId: C, memberId: "m-2", incomeType: "Rental Income", frequency: "Monthly", amount: 25000, remark: "Flat in Wakad, let out" },
+  ],
+  expenses: [
+    [1, 18000], [2, 2500], [3, 6000], [4, 8000], [5, 5000], [6, 1500], [7, 9000], [8, 2000], [9, 800],
+    [10, 4000], [11, 6000], [12, 5000], [13, 8000], [14, 3000], [15, 15000], [16, 18000], [17, 10000], [18, 2000],
+  ].map(([categoryId, monthlyAmount]) => ({ id: `ex-${categoryId}`, clientId: C, categoryId, monthlyAmount })),
+  goals: [
+    { id: "g-1", clientId: C, memberId: "m-1", goalType: "retirement", name: "Rahul – retirement", priorityLevel: "High", priorityRank: 1, currentMonthlyExpenses: 120000 },
+    { id: "g-2", clientId: C, memberId: "m-3", goalType: "education", name: "Aarav – engineering", priorityLevel: "High", priorityRank: 2, startAge: 18, tenureYears: 4, costToday: 600000 },
+    { id: "g-3", clientId: C, goalType: "house", name: "Dream House", priorityLevel: "High", priorityRank: 3, startYear: 2032, costToday: 15000000, loanAmount: 9000000 },
+    { id: "g-4", clientId: C, goalType: "car", name: "Decent Car", priorityLevel: "Medium", priorityRank: 4, startYear: 2028, costToday: 1500000, loanAmount: 0 },
+    { id: "g-5", clientId: C, memberId: "m-3", goalType: "marriage", name: "Aarav – marriage", priorityLevel: "Medium", priorityRank: 5, startAge: 28, costToday: 2500000 },
+    { id: "g-6", clientId: C, goalType: "vacation", name: "Family vacations", priorityLevel: "Low", priorityRank: 6, startYear: 2027, endYear: 2045, frequencyYears: 2, costToday: 300000 },
+    { id: "g-7", clientId: C, goalType: "other", name: "Mother's knee surgery fund", priorityLevel: "Medium", priorityRank: 7, isWanted: true, timeFrame: "Within 3 years", costToday: 400000 },
+  ],
+  assets: [
+    { id: "a-1", clientId: C, ownerMemberId: "m-1", category: "real_estate", subType: "Residential House/Flat", location: "Pune, Maharashtra", startDate: "2016-01-01", investedAmount: 7500000, currentValue: 13500000 },
+    { id: "a-2", clientId: C, ownerMemberId: "m-2", category: "real_estate", subType: "Investment Property", location: "Pune, Maharashtra", startDate: "2020-01-01", investedAmount: 4200000, currentValue: 5600000 },
+    { id: "a-3", clientId: C, ownerMemberId: "m-1", category: "cash_bank", subType: "Savings account", institution: "HDFC Bank", currentValue: 450000 },
+    { id: "a-4", clientId: C, ownerMemberId: "m-2", category: "cash_bank", subType: "Savings account", institution: "ICICI Bank", currentValue: 180000 },
+    { id: "a-5", clientId: C, ownerMemberId: "m-1", category: "fixed_income", subType: "FD", institution: "State Bank of India", investedAmount: 1000000, maturityValue: 1236000, startDate: "2024-03-15", maturityDate: "2027-03-15", interestRatePct: 7.1, compounding: "Quarterly" },
+    { id: "a-6", clientId: C, ownerMemberId: "m-1", category: "small_savings", subType: "PPF", investedAmount: 950000, startDate: "2015-04-01", maturityDate: "2031-04-01", maturityValue: 2400000, monthlyContribution: 12500 },
+    { id: "a-7", clientId: C, ownerMemberId: "m-2", category: "small_savings", subType: "NPS", investedAmount: 520000, startDate: "2019-07-01", monthlyContribution: 5000 },
+    { id: "a-8", clientId: C, ownerMemberId: "m-1", category: "retirement", subType: "EPF", currentValue: 1840000, valueAsOf: "2026-10-31", monthlyContribution: 21600, employerMonthlyContribution: 21600 },
+    { id: "a-9", clientId: C, ownerMemberId: "m-2", category: "gold_silver", subType: "SGB Bond", investedAmount: 300000, currentValue: 520000, yearlyContribution: 50000 },
+    { id: "a-10", clientId: C, ownerMemberId: "m-1", category: "miscellaneous", subType: "Unlisted shares (ESOP)", investedAmount: 200000, currentValue: 650000, expectedGrowthPct: 10 },
+    { id: "a-11", clientId: C, ownerMemberId: "m-1", category: "mutual_fund", name: "Parag Parikh Flexi Cap Fund", assetClass: "Equity", currentValue: 1240000, monthlyContribution: 25000, annualStepUpPct: 10 },
+    { id: "a-12", clientId: C, ownerMemberId: "m-2", category: "mutual_fund", name: "HDFC Mid-Cap Opportunities Fund", assetClass: "Equity", currentValue: 680000, monthlyContribution: 15000 },
+    { id: "a-13", clientId: C, ownerMemberId: "m-1", category: "mutual_fund", name: "ICICI Prudential Corporate Bond Fund", assetClass: "Debt", currentValue: 410000 },
+    { id: "a-14", clientId: C, ownerMemberId: "m-1", category: "equity", name: "HDFCBANK", quantity: 200, buyPrice: 1450, currentValue: 340000 },
+    { id: "a-15", clientId: C, ownerMemberId: "m-1", category: "equity", name: "INFY", quantity: 150, buyPrice: 1380, currentValue: 270000 },
+  ],
+  goalLinks: [
+    { id: "gl-1", clientId: C, goalId: "g-1", assetId: "a-11", rank: 1 },
+    { id: "gl-2", clientId: C, goalId: "g-2", assetId: "a-13", rank: 1 },
+    { id: "gl-3", clientId: C, goalId: "g-2", assetId: "a-6", rank: 1 },
+    { id: "gl-4", clientId: C, goalId: "g-1", assetId: "a-6", rank: 2 },
+    { id: "gl-5", clientId: C, goalId: "g-4", assetId: "a-5", rank: 1 },
+    { id: "gl-6", clientId: C, goalId: "g-1", assetId: "a-8", rank: 1 },
+  ],
+  liabilities: [
+    { id: "l-1", clientId: C, ownerMemberId: "m-1", loanType: "Home Loan", principalOutstanding: 3800000, emiAmount: 42000, emiEndMonth: "2032-03-01", interestRatePct: 8.6, lender: "HDFC Bank" },
+    { id: "l-2", clientId: C, ownerMemberId: "m-2", loanType: "Vehicle Loan", principalOutstanding: 320000, emiAmount: 15500, emiEndMonth: "2028-08-01", interestRatePct: 9.2, lender: "ICICI Bank" },
+  ],
+  creditCards: [{ clientId: C, cardCount: 3, outstandingAmount: 45000, paymentBehaviour: "Full", yearlyUsage: 600000, yearsUsing: 9 }],
+  lifePolicies: [
+    { id: "lp-1", clientId: C, insuredMemberId: "m-1", policyName: "HDFC Life Click 2 Protect", policyNumber: "HL-2381190", commencementDate: "2018-06-10", sumAssured: 20000000, premiumAmount: 24500, premiumFrequency: "Yearly", policyTermYears: 30, pptYears: 30, nomineeName: "Neha Sharma", status: "Active" },
+    { id: "lp-2", clientId: C, insuredMemberId: "m-1", policyName: "LIC Jeevan Anand", policyNumber: "LIC-77120034", commencementDate: "2012-02-01", sumAssured: 1000000, premiumAmount: 48000, premiumFrequency: "Yearly", policyTermYears: 21, pptYears: 21, surrenderValue: 380000, maturityValue: 2200000, riders: "Accidental death benefit", nomineeName: "Kamla Sharma", status: "Active" },
+    { id: "lp-3", clientId: C, insuredMemberId: "m-2", policyName: "Max Life Smart Term", policyNumber: "ML-5521876", commencementDate: "2020-09-01", sumAssured: 10000000, premiumAmount: 14800, premiumFrequency: "Yearly", policyTermYears: 35, pptYears: 35, nomineeName: "Rahul Sharma", status: "Active" },
+  ],
+  generalPolicies: [
+    { id: "gp-1", clientId: C, insuredMemberId: "m-1", policyName: "Star Health Family Optima", coverType: "HP", policyType: "Floater", commencementDate: "2019-02-14", sumAssured: 1000000, annualPremium: 32000, tenureYears: 1, renewalDate: "2027-02-14" },
+    { id: "gp-2", clientId: C, insuredMemberId: "m-4", policyName: "Care Senior", coverType: "HP", policyType: "Individual", commencementDate: "2021-05-01", sumAssured: 500000, annualPremium: 41000, tenureYears: 1, renewalDate: "2027-05-01" },
+    { id: "gp-3", clientId: C, insuredMemberId: "m-1", policyName: "TATA AIG Accident Guard", coverType: "PA", policyType: "Individual", commencementDate: "2022-01-10", sumAssured: 5000000, annualPremium: 4200, tenureYears: 1, renewalDate: "2027-01-10" },
+  ],
+};

@@ -2,43 +2,63 @@
 
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { useState } from "react";
-import { ChevronRight, Pencil, Plus, Trash2, UserRound } from "lucide-react";
+import { useEffect, useState } from "react";
+import { ChevronRight, Pencil } from "lucide-react";
 import type { Client, FamilyMember } from "@omnimax/shared";
-import { Panel } from "@/components/ui/page-header";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Dialog } from "@/components/ui/dialog";
 import { Field, Input, Select, Textarea } from "@/components/ui/form";
-import { Avatar } from "@/components/ui/avatar";
-import { Lifeline } from "@/components/clients/lifeline";
-import { MemberDialog } from "@/components/clients/member-dialog";
 import { STATUS_LABEL, StatusBadge, useVisibleClients } from "@/components/clients/shared";
+import { FamilyTab } from "@/components/clients/tabs/family-tab";
+import { CashflowTab } from "@/components/clients/tabs/cashflow-tab";
+import { GoalsTab } from "@/components/clients/tabs/goals-tab";
+import { AssetsTab } from "@/components/clients/tabs/assets-tab";
+import { LiabilitiesTab } from "@/components/clients/tabs/liabilities-tab";
+import { InsuranceTab } from "@/components/clients/tabs/insurance-tab";
+import type { TabProps } from "@/components/clients/tabs/types";
 import { useAuth } from "@/lib/auth";
 import { can } from "@/lib/roles";
 import { useClientStore } from "@/lib/store";
-import { ageFromDob, formatDate, yearAtAge } from "@/lib/format";
+import { formatDate, formatINRShort, yearAtAge } from "@/lib/format";
 import { cn } from "@/lib/cn";
 import type { ClientRecord } from "@/data/sample-data";
 
-const TABS = [
-  { key: "family", label: "Family" },
-  { key: "cashflow", label: "Income and expenses" },
-  { key: "goals", label: "Goals" },
-  { key: "assets", label: "Assets" },
-  { key: "liabilities", label: "Liabilities" },
-  { key: "insurance", label: "Insurance" },
+/** Profile tabs, in the order of the Client Data Gathering Sheet. */
+const TABS: Array<{ key: string; label: string; Component: (p: TabProps) => React.ReactNode }> = [
+  { key: "family", label: "Family", Component: FamilyTab },
+  { key: "cashflow", label: "Income and expenses", Component: CashflowTab },
+  { key: "goals", label: "Goals", Component: GoalsTab },
+  { key: "assets", label: "Assets", Component: AssetsTab },
+  { key: "liabilities", label: "Liabilities", Component: LiabilitiesTab },
+  { key: "insurance", label: "Insurance", Component: InsuranceTab },
 ];
+
+/** Keep the open tab in the URL (#goals) so a refresh or shared link opens the same tab. */
+function useTab(): [string, (k: string) => void] {
+  const [tab, setTab] = useState("family");
+  useEffect(() => {
+    const read = () => {
+      const h = window.location.hash.slice(1);
+      setTab(TABS.some((t) => t.key === h) ? h : "family");
+    };
+    read();
+    window.addEventListener("hashchange", read);
+    return () => window.removeEventListener("hashchange", read);
+  }, []);
+  const choose = (k: string) => {
+    history.replaceState(null, "", `#${k}`);
+    setTab(k);
+  };
+  return [tab, choose];
+}
 
 export default function ClientProfilePage() {
   const { id } = useParams<{ id: string }>();
   const { user, users } = useAuth();
-  const { members, removeMember } = useClientStore();
+  const { members, records } = useClientStore();
   const visible = useVisibleClients();
   const client = visible.find((c) => c.id === id);
-
-  const [editingMember, setEditingMember] = useState<FamilyMember | "new" | null>(null);
-  const [removing, setRemoving] = useState<FamilyMember | null>(null);
+  const [tab, setTab] = useTab();
   const [editingClient, setEditingClient] = useState(false);
 
   if (!client) {
@@ -51,18 +71,30 @@ export default function ClientProfilePage() {
     );
   }
 
-  const family = members.filter((m) => m.clientId === client.id).sort((a, b) => Number(b.isPrimary) - Number(a.isPrimary) || a.sortOrder - b.sortOrder);
+  const family = members
+    .filter((m) => m.clientId === client.id)
+    .sort((a, b) => Number(b.isPrimary) - Number(a.isPrimary) || a.sortOrder - b.sortOrder);
   const editable = can(user?.role, "clients.edit");
   const adviser = users.find((u) => u.id === client.adviserId);
+  const mine = <T extends { clientId: string }>(list: T[]) => list.filter((r) => r.clientId === client.id);
 
-  // simple facts from entered data only (no projections)
+  // simple facts from entered data only; no projections in Phase 1A
   const thisYear = new Date().getFullYear();
-  const dependents = family.filter((m) => m.financiallyDependent).length;
   const upcoming = family
     .map((m) => ({ m, year: yearAtAge(m.dateOfBirth, m.retirementAge) }))
     .filter((x): x is { m: FamilyMember; year: number } => x.year != null && x.year >= thisYear)
     .sort((a, b) => a.year - b.year)[0];
-  const lastYear = Math.max(0, ...family.map((m) => yearAtAge(m.dateOfBirth, m.lifeExpectancy) ?? 0));
+  const goalCount = mine(records.goals).length;
+  const loansOutstanding = mine(records.liabilities).reduce((s, l) => s + l.principalOutstanding, 0);
+  const counts: Record<string, number> = {
+    family: family.length,
+    cashflow: mine(records.incomes).length,
+    goals: goalCount,
+    assets: mine(records.assets).length,
+    liabilities: mine(records.liabilities).length,
+    insurance: mine(records.lifePolicies).length + mine(records.generalPolicies).length,
+  };
+  const Active = TABS.find((t) => t.key === tab)!.Component;
 
   return (
     <>
@@ -92,10 +124,10 @@ export default function ClientProfilePage() {
 
       <dl className="grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-line bg-line md:grid-cols-4">
         {[
-          { label: "Family members", value: String(family.length) },
-          { label: "Financially dependent", value: String(dependents) },
+          { label: "Family members", value: String(family.length), sub: `${family.filter((m) => m.financiallyDependent).length} financially dependent` },
           { label: "Next retirement", value: upcoming ? String(upcoming.year) : "None ahead", sub: upcoming ? `${upcoming.m.fullName}, at ${upcoming.m.retirementAge}` : undefined },
-          { label: "Last life-expectancy year", value: lastYear ? String(lastYear) : "–", sub: lastYear ? `${lastYear - thisYear} years from now` : undefined },
+          { label: "Goals", value: String(goalCount), sub: goalCount ? `${mine(records.goals).filter((g) => g.priorityLevel === "High").length} high priority` : "None added" },
+          { label: "Loans outstanding", value: loansOutstanding ? formatINRShort(loansOutstanding) : "None", sub: counts.liabilities ? `${counts.liabilities} loan${counts.liabilities > 1 ? "s" : ""}` : undefined },
         ].map((f) => (
           <div key={f.label} className="bg-white px-5 py-4">
             <dt className="text-xs text-muted">{f.label}</dt>
@@ -105,131 +137,41 @@ export default function ClientProfilePage() {
         ))}
       </dl>
 
-      <Panel title="Household life line" className="mt-6">
-        <div className="px-5 py-4">
-          {family.length ? <Lifeline members={family} /> : <p className="text-sm text-muted">Add family members to see their life line.</p>}
-        </div>
-      </Panel>
-
       <div className="mt-8 border-b border-line">
         <div role="tablist" aria-label="Client data" className="-mb-px flex gap-6 overflow-x-auto">
           {TABS.map((t) => {
-            const active = t.key === "family";
+            const active = t.key === tab;
             return (
               <button
                 key={t.key}
                 role="tab"
+                id={`tab-${t.key}`}
                 aria-selected={active}
-                disabled={!active}
-                title={active ? undefined : "Comes in the next build"}
+                aria-controls="tab-panel"
+                onClick={() => setTab(t.key)}
                 className={cn(
-                  "border-b-2 pb-2.5 text-sm whitespace-nowrap",
-                  active ? "border-brand font-medium text-ink" : "cursor-not-allowed border-transparent text-faint",
+                  "flex items-center gap-1.5 border-b-2 pb-2.5 text-sm whitespace-nowrap transition-colors",
+                  active ? "border-brand font-medium text-ink" : "border-transparent text-muted hover:text-ink",
                 )}
               >
                 {t.label}
+                <span className={cn("rounded-full px-1.5 text-[11px]", active ? "bg-brand-50 text-brand" : "bg-surface text-faint")}>{counts[t.key]}</span>
               </button>
             );
           })}
         </div>
       </div>
 
-      <section role="tabpanel" aria-label="Family" className="pt-5">
-        <div className="mb-3 flex items-center justify-between gap-4">
-          <p className="text-sm text-muted">Everyone in the household plan. Ages use the data sheet rule: this year minus year of birth.</p>
-          {editable && (
-            <Button size="sm" onClick={() => setEditingMember("new")}>
-              <Plus size={15} /> Add family member
-            </Button>
-          )}
-        </div>
-        <div className="overflow-x-auto rounded-lg border border-line">
-          <table className="w-full min-w-[860px] text-left text-sm">
-            <thead className="border-b border-line bg-surface text-xs text-muted">
-              <tr>
-                <th scope="col" className="px-4 py-2.5 font-medium">Name</th>
-                <th scope="col" className="px-4 py-2.5 font-medium">Date of birth</th>
-                <th scope="col" className="px-4 py-2.5 text-right font-medium">Age</th>
-                <th scope="col" className="px-4 py-2.5 text-right font-medium">Retirement age</th>
-                <th scope="col" className="px-4 py-2.5 text-right font-medium">Life expectancy</th>
-                <th scope="col" className="px-4 py-2.5 font-medium">Dependent</th>
-                <th scope="col" className="px-4 py-2.5 font-medium">Residence</th>
-                {editable && <th scope="col" className="px-4 py-2.5"><span className="sr-only">Actions</span></th>}
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-line">
-              {family.map((m) => (
-                <tr key={m.id} className="group">
-                  <td className="whitespace-nowrap px-4 py-3">
-                    <div className="flex items-center gap-3">
-                      <Avatar name={m.fullName} />
-                      <div className="min-w-0">
-                        <p className="flex items-center gap-2 font-medium text-ink">
-                          {m.fullName}
-                          {m.isPrimary && <Badge tone="brand">Main client</Badge>}
-                        </p>
-                        <p className="text-xs text-muted">{[m.relationship, m.occupation].filter(Boolean).join(", ")}</p>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="whitespace-nowrap px-4 py-3 text-ink-soft">{formatDate(m.dateOfBirth)}</td>
-                  <td className="whitespace-nowrap px-4 py-3 text-right text-ink">{ageFromDob(m.dateOfBirth) ?? "–"}</td>
-                  <td className="whitespace-nowrap px-4 py-3 text-right text-ink">{m.retirementAge ?? <span className="text-faint">–</span>}</td>
-                  <td className="whitespace-nowrap px-4 py-3 text-right text-ink">{m.lifeExpectancy}</td>
-                  <td className="whitespace-nowrap px-4 py-3 text-ink-soft">{m.financiallyDependent == null ? "–" : m.financiallyDependent ? "Yes" : "No"}</td>
-                  <td className="whitespace-nowrap px-4 py-3 text-ink-soft">{m.residenceStatus ?? "–"}</td>
-                  {editable && (
-                    <td className="whitespace-nowrap px-4 py-3">
-                      <div className="flex justify-end gap-1">
-                        <Button variant="ghost" size="sm" onClick={() => setEditingMember(m)} aria-label={`Edit ${m.fullName}`}>
-                          <Pencil size={14} /> Edit
-                        </Button>
-                        {!m.isPrimary && (
-                          <Button variant="ghost" size="sm" onClick={() => setRemoving(m)} aria-label={`Remove ${m.fullName}`} className="text-muted hover:text-danger">
-                            <Trash2 size={14} />
-                          </Button>
-                        )}
-                      </div>
-                    </td>
-                  )}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          {family.length === 0 && (
-            <div className="flex flex-col items-center py-12 text-center">
-              <UserRound className="text-faint" />
-              <p className="mt-2 text-sm text-muted">No family members yet.</p>
-            </div>
-          )}
-        </div>
+      <section id="tab-panel" role="tabpanel" aria-labelledby={`tab-${tab}`} className="pt-6">
+        <Active clientId={client.id} members={family} editable={editable} />
       </section>
 
-      {client.remarks && (
-        <Panel title="Adviser remarks" className="mt-6">
+      {client.remarks && tab === "family" && (
+        <section className="mt-6 rounded-lg border border-line bg-white">
+          <h2 className="border-b border-line px-5 py-3.5 text-[15px] font-semibold text-ink">Adviser remarks</h2>
           <p className="max-w-[72ch] px-5 py-4 text-sm text-ink-soft">{client.remarks}</p>
-        </Panel>
+        </section>
       )}
-
-      {editingMember && (
-        <MemberDialog clientId={client.id} member={editingMember === "new" ? undefined : editingMember} onClose={() => setEditingMember(null)} />
-      )}
-
-      <Dialog
-        open={!!removing}
-        onClose={() => setRemoving(null)}
-        title={`Remove ${removing?.fullName ?? ""}?`}
-        description="They'll be taken out of this household plan. You can add them again later."
-        size="sm"
-        footer={
-          <>
-            <Button variant="secondary" onClick={() => setRemoving(null)}>Keep</Button>
-            <Button variant="danger" onClick={() => { removeMember(removing!.id); setRemoving(null); }}>Remove member</Button>
-          </>
-        }
-      >
-        <p className="text-sm text-ink-soft">Any goals planned for this person will need a new owner once goals are added.</p>
-      </Dialog>
 
       {editingClient && <EditHouseholdDialog client={client} onClose={() => setEditingClient(false)} />}
     </>

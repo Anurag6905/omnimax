@@ -1,41 +1,76 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
-import type { FamilyMember } from "@omnimax/shared";
-import { SAMPLE_CLIENTS, SAMPLE_MEMBERS, type ClientRecord } from "@/data/sample-data";
+import type {
+  Asset, CreditCardProfile, Expense, FamilyMember, GeneralInsurancePolicy, Goal, GoalFundingLink,
+  Income, Liability, LifeInsurancePolicy,
+} from "@omnimax/shared";
+import { SAMPLE_CLIENTS, SAMPLE_MEMBERS, SAMPLE_RECORDS, type ClientRecord } from "@/data/sample-data";
 
 /**
  * Phase 1A client data store: sample data in memory, saved to this browser so
- * changes survive a refresh. Phase 1B swaps these functions for API calls.
+ * changes survive a refresh. Phase 1B swaps these functions for API calls;
+ * screens keep calling the same functions.
  */
+
+/** Every per-client list, keyed by the db table it will map to. */
+export type RecordMap = {
+  incomes: Income[];
+  expenses: Expense[];
+  goals: Goal[];
+  assets: Asset[];
+  goalLinks: GoalFundingLink[];
+  liabilities: Liability[];
+  creditCards: CreditCardProfile[];
+  lifePolicies: LifeInsurancePolicy[];
+  generalPolicies: GeneralInsurancePolicy[];
+};
+export type RecordKind = keyof RecordMap;
+export type RecordOf<K extends RecordKind> = RecordMap[K][number];
+
+/** The source of a goal reservation: an asset or an income stream. */
+export type FundingSource = { assetId: string } | { incomeId: string };
+
 interface StoreState {
   clients: ClientRecord[];
   members: FamilyMember[];
+  records: RecordMap;
   addClient: (client: Omit<ClientRecord, "id" | "clientCode" | "createdAt" | "updatedAt">, primary: Omit<FamilyMember, "id" | "clientId" | "isPrimary" | "sortOrder">) => string;
   updateClient: (id: string, patch: Partial<ClientRecord>) => void;
   saveMember: (member: Omit<FamilyMember, "id" | "sortOrder"> & { id?: string }) => void;
   removeMember: (id: string) => void;
+  /** Insert or update one record (matched on id). Returns the id. */
+  saveRecord: <K extends RecordKind>(kind: K, record: RecordOf<K>) => string;
+  removeRecord: (kind: RecordKind, id: string) => void;
+  /** Replace a source's Priority Goal 1/2/3. Blank entries mean "fund all other goals". */
+  setGoalLinks: (clientId: string, source: FundingSource, goalIds: Array<string | undefined>) => void;
+  /** Replace a client's monthly expenses (category id → amount). */
+  setExpenses: (clientId: string, amounts: Record<number, number | undefined>) => void;
+  saveCreditCard: (profile: CreditCardProfile) => void;
   resetSampleData: () => void;
 }
 
 const StoreContext = createContext<StoreState | null>(null);
-const KEY = "omx.data.v1";
+const KEY = "omx.data.v2";
 const now = () => new Date().toISOString();
-const newId = (p: string) => `${p}-${Math.random().toString(36).slice(2, 10)}`;
+export const newId = (p: string) => `${p}-${Math.random().toString(36).slice(2, 10)}`;
+const idOf = (r: object) => ("id" in r ? (r as { id: string }).id : (r as { clientId: string }).clientId);
 
 export function ClientStoreProvider({ children }: { children: ReactNode }) {
   const [clients, setClients] = useState<ClientRecord[]>(SAMPLE_CLIENTS);
   const [members, setMembers] = useState<FamilyMember[]>(SAMPLE_MEMBERS);
+  const [records, setRecords] = useState<RecordMap>(SAMPLE_RECORDS);
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
     try {
       const saved = localStorage.getItem(KEY);
       if (saved) {
-        const data = JSON.parse(saved) as { clients: ClientRecord[]; members: FamilyMember[] };
+        const data = JSON.parse(saved) as { clients: ClientRecord[]; members: FamilyMember[]; records: Partial<RecordMap> };
         /* eslint-disable react-hooks/set-state-in-effect */
         setClients(data.clients);
         setMembers(data.members);
+        setRecords({ ...SAMPLE_RECORDS, ...data.records });
       }
     } catch {}
     setLoaded(true);
@@ -45,9 +80,9 @@ export function ClientStoreProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!loaded) return;
     try {
-      localStorage.setItem(KEY, JSON.stringify({ clients, members }));
+      localStorage.setItem(KEY, JSON.stringify({ clients, members, records }));
     } catch {}
-  }, [clients, members, loaded]);
+  }, [clients, members, records, loaded]);
 
   const touch = useCallback((clientId: string) => {
     setClients((list) => list.map((c) => (c.id === clientId ? { ...c, updatedAt: now() } : c)));
@@ -88,14 +123,84 @@ export function ClientStoreProvider({ children }: { children: ReactNode }) {
     [members, touch],
   );
 
+  const saveRecord = useCallback<StoreState["saveRecord"]>(
+    (kind, record) => {
+      const id = idOf(record);
+      setRecords((all) => {
+        const list = all[kind] as Array<RecordOf<typeof kind>>;
+        const exists = list.some((r) => idOf(r) === id);
+        const next = exists ? list.map((r) => (idOf(r) === id ? record : r)) : [...list, record];
+        return { ...all, [kind]: next };
+      });
+      touch(record.clientId);
+      return id;
+    },
+    [touch],
+  );
+
+  const removeRecord = useCallback(
+    (kind: RecordKind, id: string) => {
+      setRecords((all) => {
+        const target = (all[kind] as Array<{ clientId: string }>).find((r) => idOf(r) === id);
+        if (target) touch(target.clientId);
+        const next: RecordMap = { ...all, [kind]: (all[kind] as object[]).filter((r) => idOf(r) !== id) };
+        // keep goal reservations consistent with what they point at
+        if (kind === "goals") next.goalLinks = all.goalLinks.filter((l) => l.goalId !== id);
+        if (kind === "assets") next.goalLinks = all.goalLinks.filter((l) => l.assetId !== id);
+        if (kind === "incomes") next.goalLinks = all.goalLinks.filter((l) => l.incomeId !== id);
+        return next;
+      });
+    },
+    [touch],
+  );
+
+  const setGoalLinks = useCallback<StoreState["setGoalLinks"]>((clientId, source, goalIds) => {
+    const matches = (l: GoalFundingLink) => ("assetId" in source ? l.assetId === source.assetId : l.incomeId === source.incomeId);
+    setRecords((all) => {
+      const kept = all.goalLinks.filter((l) => !matches(l));
+      const added: GoalFundingLink[] = [];
+      goalIds.forEach((goalId, i) => {
+        if (goalId) added.push({ id: newId("gl"), clientId, goalId, rank: (i + 1) as 1 | 2 | 3, ...source });
+      });
+      return { ...all, goalLinks: [...kept, ...added] };
+    });
+  }, []);
+
+  const setExpenses = useCallback<StoreState["setExpenses"]>(
+    (clientId, amounts) => {
+      setRecords((all) => {
+        const others = all.expenses.filter((e) => e.clientId !== clientId);
+        const mine = all.expenses.filter((e) => e.clientId === clientId);
+        const next: Expense[] = [];
+        for (const [cat, amount] of Object.entries(amounts)) {
+          if (amount == null) continue;
+          const prev = mine.find((e) => e.categoryId === Number(cat));
+          next.push({ id: prev?.id ?? newId("ex"), clientId, categoryId: Number(cat), monthlyAmount: amount, remark: prev?.remark });
+        }
+        return { ...all, expenses: [...others, ...next] };
+      });
+      touch(clientId);
+    },
+    [touch],
+  );
+
+  const saveCreditCard = useCallback((profile: CreditCardProfile) => {
+    setRecords((all) => ({ ...all, creditCards: [...all.creditCards.filter((c) => c.clientId !== profile.clientId), profile] }));
+    touch(profile.clientId);
+  }, [touch]);
+
   const resetSampleData = useCallback(() => {
     setClients(SAMPLE_CLIENTS);
     setMembers(SAMPLE_MEMBERS);
+    setRecords(SAMPLE_RECORDS);
   }, []);
 
   const value = useMemo(
-    () => ({ clients, members, addClient, updateClient, saveMember, removeMember, resetSampleData }),
-    [clients, members, addClient, updateClient, saveMember, removeMember, resetSampleData],
+    () => ({
+      clients, members, records, addClient, updateClient, saveMember, removeMember,
+      saveRecord, removeRecord, setGoalLinks, setExpenses, saveCreditCard, resetSampleData,
+    }),
+    [clients, members, records, addClient, updateClient, saveMember, removeMember, saveRecord, removeRecord, setGoalLinks, setExpenses, saveCreditCard, resetSampleData],
   );
   return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>;
 }
@@ -104,4 +209,10 @@ export function useClientStore(): StoreState {
   const ctx = useContext(StoreContext);
   if (!ctx) throw new Error("useClientStore must be used inside ClientStoreProvider");
   return ctx;
+}
+
+/** One client's records of a kind. */
+export function useClientRecords<K extends RecordKind>(kind: K, clientId: string): RecordMap[K] {
+  const { records } = useClientStore();
+  return useMemo(() => (records[kind] as Array<RecordOf<K>>).filter((r) => r.clientId === clientId) as RecordMap[K], [records, kind, clientId]);
 }
