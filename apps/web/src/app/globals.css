@@ -1,0 +1,84 @@
+@import "tailwindcss";
+
+/*
+ * Omnimax design tokens. White theme only.
+ * ink      – primary text, headings
+ * muted    – secondary text
+ * line     – borders and dividers
+ * surface  – subtle fills (table headers, hover rows)
+ * brand    – ledger green: primary actions, active nav, retirement markers
+ * warn     – amber: attention (prospects, later: underfunded goals)
+ * danger   – destructive actions and errors
+ */
+@theme {
+  --font-sans: "IBM Plex Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+
+  --color-ink: #14213d;
+  --color-ink-soft: #2f3b55;
+  --color-muted: #5b6475;
+  --color-faint: #8a92a3;
+  --color-line: #e6e8ee;
+  --color-line-strong: #d3d7e0;
+  --color-surface: #f7f8fa;
+  --color-canvas: #ffffff;
+
+  --color-brand: #0f6b5c;
+  --color-brand-hover: #0b5246;
+  --color-brand-50: #e8f3f0;
+  --color-brand-100: #cfe6df;
+
+  --color-warn: #a86a12;
+  --color-warn-50: #fbf3e4;
+  --color-danger: #b42318;
+  --color-danger-50: #fdecea;
+
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+
+  --shadow-pop: 0 12px 32px -8px rgb(20 33 61 / 0.18), 0 2px 6px rgb(20 33 61 / 0.06);
+}
+
+html {
+  background: var(--color-canvas);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  font-feature-settings: "tnum" 1; /* even-width figures so amounts line up */
+}
+
+body {
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-brand);
+  outline-offset: 2px;
+}
+
+::selection {
+  background: var(--color-brand-100);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+@keyframes pop-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.animate-pop-in {
+  animation: pop-in 160ms ease-out;
+}

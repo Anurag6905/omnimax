@@ -1,0 +1,24 @@
+{
+  "name": "omnimax",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Omnimax replacement – financial planning platform for advisers",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "npm run dev -w @omnimax/web",
+    "dev:web": "npm run dev -w @omnimax/web",
+    "dev:api": "npm run start:dev -w @omnimax/api",
+    "build": "npm run build --workspaces --if-present",
+    "lint": "npm run lint --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "db:up": "docker compose up -d db",
+    "db:down": "docker compose down",
+    "db:reset": "docker compose down -v && docker compose up -d db"
+  }
+}

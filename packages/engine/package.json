@@ -1,0 +1,8 @@
+{
+  "name": "@omnimax/engine",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Financial calculation engine (Phase 1B). Must match Input_Allocations.py and real Omnimax outputs.",
+  "main": "src/index.ts",
+  "types": "src/index.ts"
+}

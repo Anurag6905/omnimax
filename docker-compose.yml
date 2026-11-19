@@ -1,0 +1,17 @@
+# Local PostgreSQL for development.
+# The schema in db/schema.sql loads automatically the first time the volume is created.
+# To reload it after editing: npm run db:reset
+services:
+  db:
+    image: postgres:16
+    container_name: omnimax-db
+    restart: unless-stopped
+    env_file: .env
+    ports:
+      - "5432:5432"
+    volumes:
+      - omnimax_pgdata:/var/lib/postgresql/data
+      - ./db/schema.sql:/docker-entrypoint-initdb.d/01_schema.sql:ro
+
+volumes:
+  omnimax_pgdata:

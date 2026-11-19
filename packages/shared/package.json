@@ -1,0 +1,8 @@
+{
+  "name": "@omnimax/shared",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Types shared by web, api and engine. Mirrors db/schema.sql.",
+  "main": "src/index.ts",
+  "types": "src/index.ts"
+}
