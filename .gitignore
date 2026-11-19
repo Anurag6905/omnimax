@@ -27,5 +27,5 @@ Thumbs.db
 .idea/
 
 # real client data must never be committed
-data/
+/data/
 *.client.xlsx
