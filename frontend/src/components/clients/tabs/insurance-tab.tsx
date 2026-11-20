@@ -81,6 +81,7 @@ export function InsuranceTab({ clientId, members, editable }: TabProps) {
                 <th scope="col" className="px-5 py-2.5 font-medium">Tobacco</th>
                 <th scope="col" className="px-5 py-2.5 font-medium">Health status</th>
                 <th scope="col" className="px-5 py-2.5 font-medium">Health history</th>
+                <th scope="col" className="px-5 py-2.5 font-medium">Remark</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-line">
@@ -90,6 +91,7 @@ export function InsuranceTab({ clientId, members, editable }: TabProps) {
                   <td className="px-5 py-2.5 text-ink-soft">{m.tobaccoUser == null ? "–" : m.tobaccoUser ? "Yes" : "No"}</td>
                   <td className="px-5 py-2.5 text-ink-soft">{m.healthStatus ?? "–"}</td>
                   <td className="px-5 py-2.5 text-ink-soft">{m.healthHistory ?? "–"}</td>
+                  <td className="px-5 py-2.5 text-ink-soft">{m.healthRemark ?? "–"}</td>
                 </tr>
               ))}
             </tbody>

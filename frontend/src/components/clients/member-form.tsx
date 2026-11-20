@@ -113,6 +113,9 @@ export function MemberForm({ draft, errors, onChange, compact, lockRelationship 
           <Field label="Health history" className={cn("sm:col-span-2")}>
             {(id) => <Input id={id} {...bind("healthHistory")} />}
           </Field>
+          <Field label="Health remark" className={cn("sm:col-span-2")}>
+            {(id) => <Input id={id} {...bind("healthRemark")} />}
+          </Field>
         </Section>
       )}
     </div>

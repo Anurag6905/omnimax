@@ -29,8 +29,29 @@
 ### Next
 - [ ] Adviser review and sign-off of all Phase 1A screens: run it with the review guide, https://claude.ai/artifact/Qaip7iDB4pV49Af2ekKVEQ (walkthrough, 14 decisions, what the firm must hand over for Phase 1B)
 
+## Phase 1B — Backend and calculation engine (started 2026-11-20)
+
+Phase 1A review: per the project owner, building continues on the plans as given; adviser sign-off can happen alongside.
+
+### Done
+- [x] `reference/Input_Allocations.py` added to the repo (the allocation reference)
+- [x] Goal allocation ported to TypeScript (`packages/engine/src/allocation.ts`), step for step, quirks kept
+- [x] Parity tests: the original Python class and the port run on 610 cases (600 generated + 10 hand-built edge cases) and match to the last digit; 10 plain-language rule tests. Run: `npm test -w @omnimax/engine`
+- [x] Mutation check: deliberately breaking the port makes parity tests fail
+- [x] Input mapping sheet (`docs/Input_Mapping.xlsx`): all 173 inputs on the client data sheet mapped to the app; rebuilt by `scripts/input-mapping/build_input_mapping.py`
+
+### Next
+- [ ] Backend: PostgreSQL + NestJS API for clients, family, all profile records, assumptions and scenarios; sign-in with roles; plan history
+- [ ] Connect the screens to the API (replace `lib/auth.tsx` and `lib/store.tsx` internals)
+- [ ] Engine: cash flow, goal costs with inflation, investment growth with SIP step-ups, retirement-linked dates, yearly withdrawals feeding the allocation
+- [ ] Regression tests against real Omnimax plans
+
+### Needed to build the rest of the engine
+- **Two or three real Omnimax plans**: the client's data sheet plus Omnimax's own export (the "Omnimax Output" and "Investments" sheets that Input_Allocations.py reads). The allocation needs each investment's yearly withdrawals, which Omnimax works out itself; we can only match Omnimax's projection by comparing against its output.
+- Omnimax's rules for: SIP timing and compounding (problem 15), how goal inflation is applied, and how retirement expenses are projected.
+
 ### Open questions
-- Role rules in `lib/roles.ts` are a proposal (advisers see only their own clients; operations see all; only admins delete or manage staff). Confirm with the advisory team.
+- ~~Role rules~~ Decided 2026-11-20: an adviser has full access to everything for their own clients (as built).
 - Age uses the data sheet's formula: this year minus birth year. Confirm Omnimax does the same (it can differ from exact age by one year).
 - Income per year uses amount × payments a year (12 / 2 / 1). The sheet's own Annually column is always Monthly × 12. Confirm Omnimax's rule for half-yearly and annual income.
 - Goals carry both High/Medium/Low (from the sheet) and an order number (used for funding). How should H/M/L map to order?

@@ -4,5 +4,14 @@
   "private": true,
   "description": "Financial calculation engine (Phase 1B). Must match Input_Allocations.py and real Omnimax outputs.",
   "main": "src/index.ts",
-  "types": "src/index.ts"
+  "types": "src/index.ts",
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "parity:refresh": "python3 test/parity/generate_cases.py test/parity/fixtures/cases.json 600 && python3 test/parity/run_reference.py test/parity/fixtures/cases.json test/parity/fixtures/expected.json"
+  },
+  "devDependencies": {
+    "vitest": "^3.2.4",
+    "typescript": "^5"
+  }
 }

@@ -39,6 +39,7 @@ export type MemberDraft = {
   healthStatus: string;
   tobaccoUser: "" | "yes" | "no";
   healthHistory: string;
+  healthRemark: string;
   panNumber: string;
   mobile: string;
   email: string;
@@ -48,7 +49,7 @@ export type MemberDraft = {
 
 export const EMPTY_MEMBER: MemberDraft = {
   fullName: "", relationship: "", occupation: "", dateOfBirth: "", retirementAge: "", lifeExpectancy: "85",
-  financiallyDependent: "", healthStatus: "", tobaccoUser: "", healthHistory: "", panNumber: "", mobile: "",
+  financiallyDependent: "", healthStatus: "", tobaccoUser: "", healthHistory: "", healthRemark: "", panNumber: "", mobile: "",
   email: "", residenceStatus: "Resident Indian", companyDesignation: "",
 };
 
@@ -61,7 +62,7 @@ export function draftFromMember(m: FamilyMember): MemberDraft {
     fullName: m.fullName, relationship: m.relationship, occupation: m.occupation ?? "", dateOfBirth: m.dateOfBirth ?? "",
     retirementAge: m.retirementAge?.toString() ?? "", lifeExpectancy: String(m.lifeExpectancy),
     financiallyDependent: yn(m.financiallyDependent), healthStatus: m.healthStatus ?? "", tobaccoUser: yn(m.tobaccoUser),
-    healthHistory: m.healthHistory ?? "", panNumber: m.panNumber ?? "", mobile: m.mobile ?? "", email: m.email ?? "",
+    healthHistory: m.healthHistory ?? "", healthRemark: m.healthRemark ?? "", panNumber: m.panNumber ?? "", mobile: m.mobile ?? "", email: m.email ?? "",
     residenceStatus: m.residenceStatus ?? "", companyDesignation: m.companyDesignation ?? "",
   };
 }
@@ -71,7 +72,7 @@ export function memberFromDraft(d: MemberDraft): Omit<FamilyMember, "id" | "clie
     fullName: d.fullName.trim(), relationship: d.relationship.trim(), occupation: opt(d.occupation),
     dateOfBirth: opt(d.dateOfBirth), retirementAge: d.retirementAge ? Number(d.retirementAge) : undefined,
     lifeExpectancy: Number(d.lifeExpectancy), financiallyDependent: toBool(d.financiallyDependent),
-    healthStatus: opt(d.healthStatus), tobaccoUser: toBool(d.tobaccoUser), healthHistory: opt(d.healthHistory),
+    healthStatus: opt(d.healthStatus), tobaccoUser: toBool(d.tobaccoUser), healthHistory: opt(d.healthHistory), healthRemark: opt(d.healthRemark),
     panNumber: opt(d.panNumber.toUpperCase()), mobile: opt(d.mobile), email: opt(d.email),
     residenceStatus: d.residenceStatus || undefined, companyDesignation: opt(d.companyDesignation),
   };

@@ -2,6 +2,14 @@
 
 Newest first. One entry per decision: what, why, alternatives.
 
+## 2026-11-20 — Phase 1B starts with the allocation port
+- **Build on the plans as given**; adviser sign-off runs alongside (project owner's decision).
+- **Roles decided:** an adviser has full access to everything for their own clients; operations see every client; admin manages staff and firm assumptions. This is what was built.
+- **Allocation first**, because it is the one rule set we have in full (`Input_Allocations.py`). Cash flow and growth rules need Omnimax outputs to check against.
+- **Faithful port, quirks kept.** `allocation.ts` matches the Python class number for number, including behaviour listed as problems (Priority Goal 3 unused, investments missing from the priority sheet skipped at levels 5–8, no cross-year protection). Fixes will be separate options switched on after advisers decide, so the original behaviour stays available for checking against Omnimax.
+- **Parity by running the original.** `test/parity/run_reference.py` loads the class straight from `reference/Input_Allocations.py` and writes expected results; the TypeScript tests must match exactly (summaries within 1e-9, as pandas sums in a different order). A mutation check showed the generated cases missed one tie-ordering branch, so hand-built edge cases were added.
+- **Input mapping sheet is generated from a script** so every change to it is a reviewable diff in git.
+
 ## 2026-11-20 — What-if scenarios
 - **A scenario stores only differences** from the plan (`scenarios.changes` jsonb: retirement ages, returns, inflation, per-goal changes). The plan is never overwritten by a what-if (problem 13); "Make it the plan" copies the changes in on purpose, after a confirmation.
 - **Retirement-age changes reuse the plan's rules**: anything stored as "at retirement" moves with the new age, and the editor lists each date that moves (problems 1 and 12).

@@ -1,9 +1,12 @@
 /**
- * Omnimax calculation engine — Phase 1B. Intentionally empty in Phase 1A.
+ * Omnimax calculation engine (Phase 1B).
  *
- * Will contain: cash-flow projection, inflation-adjusted goal costs,
- * investment growth + SIP step-ups, and the 8-level goal allocation
- * ported from reference/Input_Allocations.py (no simplification).
- * Every function must be covered by regression tests against real Omnimax plans.
+ * Done:
+ *   - allocation.ts: goal allocation, a faithful port of reference/Input_Allocations.py,
+ *     checked against the Python script on generated cases (test/parity).
+ * Next (rules to be confirmed before building, see docs/progress.md):
+ *   - cash flow, inflation-adjusted goal costs, investment growth with SIP step-ups,
+ *     retirement-linked dates, then producing PlanResults for the screens.
  */
-export const ENGINE_VERSION = '0.0.0-phase1a';
+export * from "./allocation";
+export const ENGINE_VERSION = "0.1.0";
