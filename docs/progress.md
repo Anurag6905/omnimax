@@ -27,7 +27,7 @@
 - [x] Two ready-made Sharma scenarios with sample figures: "Rahul retires at 58", "Lower equity returns"
 
 ### Next
-- [ ] Adviser review and sign-off of all Phase 1A screens
+- [ ] Adviser review and sign-off of all Phase 1A screens: run it with the review guide, https://claude.ai/artifact/Qaip7iDB4pV49Af2ekKVEQ (walkthrough, 14 decisions, what the firm must hand over for Phase 1B)
 
 ### Open questions
 - Role rules in `lib/roles.ts` are a proposal (advisers see only their own clients; operations see all; only admins delete or manage staff). Confirm with the advisory team.
