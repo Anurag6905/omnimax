@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { BarChart3, ChevronRight, Info } from "lucide-react";
+import { BarChart3, ChevronRight, Info, Split } from "lucide-react";
 import { useVisibleClients } from "@/components/clients/shared";
 import { DashboardView } from "@/components/results/dashboard-view";
 import { CashflowView } from "@/components/results/cashflow-view";
@@ -60,12 +60,20 @@ export default function ResultsPage() {
         <span className="text-ink-soft">Plan results</span>
       </nav>
 
-      <header className="pb-5">
-        <h1 className="text-[22px] leading-tight font-semibold tracking-[-0.01em] text-ink">Plan results</h1>
-        <p className="mt-1 text-sm text-muted">
-          {client.householdName}
-          {results && `, ${results.startYear} to ${results.endYear}`}
-        </p>
+      <header className="flex flex-wrap items-end justify-between gap-4 pb-5">
+        <div>
+          <h1 className="text-[22px] leading-tight font-semibold tracking-[-0.01em] text-ink">Plan results</h1>
+          <p className="mt-1 text-sm text-muted">
+            {client.householdName}
+            {results && `, ${results.startYear} to ${results.endYear}`}
+          </p>
+        </div>
+        <Link
+          href={`/clients/${id}/what-if`}
+          className="inline-flex h-9 items-center gap-2 rounded-md border border-line-strong bg-white px-4 text-sm font-medium text-ink transition-colors hover:bg-surface"
+        >
+          <Split size={15} /> Try a what-if
+        </Link>
       </header>
 
       {!results ? (

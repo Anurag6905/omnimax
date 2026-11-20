@@ -1,7 +1,7 @@
 -- =====================================================================
 -- Omnimax replacement — client data schema (PostgreSQL 16)
 -- Source of truth: "2025-10-01_Client Data Gathering Sheet.xlsx"
--- 16 tables: 2 foundation + 11 client data + 3 assumptions. See docs/database-schema.md.
+-- 17 tables: 2 foundation + 11 client data + 3 assumptions + 1 scenarios. See docs/database-schema.md.
 --
 -- Conventions
 --   * Primary keys: uuid (gen_random_uuid()).
@@ -334,6 +334,26 @@ CREATE TABLE inflation_assumptions (
     rate_pct     numeric(7,4) NOT NULL,
     PRIMARY KEY (set_id, goal_type)
 );
+
+-- ---------------------------------------------------------------------
+-- WHAT-IF SCENARIOS (project plan: save what-ifs and compare with the plan)
+-- ---------------------------------------------------------------------
+
+-- 17. scenarios — a named set of changes to one client's plan.
+--     Stores only the differences (retirement ages, returns, inflation, goals) as JSON,
+--     so the plan itself is never overwritten (problem 13).
+CREATE TABLE scenarios (
+    id           uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    client_id    uuid NOT NULL REFERENCES clients(id) ON DELETE CASCADE,
+    name         text NOT NULL,
+    notes        text,
+    changes      jsonb NOT NULL DEFAULT '{}'::jsonb,   -- shape: packages/shared ScenarioChanges
+    created_by   uuid REFERENCES users(id),
+    created_at   timestamptz NOT NULL DEFAULT now(),
+    updated_at   timestamptz NOT NULL DEFAULT now(),
+    UNIQUE (client_id, name)
+);
+CREATE INDEX idx_scenarios_client ON scenarios(client_id);
 
 -- ---------------------------------------------------------------------
 -- SEED: expense categories exactly as in the sheet

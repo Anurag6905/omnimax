@@ -3,10 +3,11 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import type {
   Asset, AssumptionSet, CreditCardProfile, Expense, FamilyMember, GeneralInsurancePolicy, Goal, GoalFundingLink,
-  Income, Liability, LifeInsurancePolicy,
+  Income, Liability, LifeInsurancePolicy, Scenario,
 } from "@omnimax/shared";
 import { SAMPLE_CLIENTS, SAMPLE_MEMBERS, SAMPLE_RECORDS, type ClientRecord } from "@/data/sample-data";
 import { SAMPLE_FIRM_ASSUMPTIONS } from "@/data/assumption-defaults";
+import { SAMPLE_SCENARIOS } from "@/data/sample-scenarios";
 
 /**
  * Phase 1A client data store: sample data in memory, saved to this browser so
@@ -54,11 +55,17 @@ interface StoreState {
   /** per-client overrides (only what differs from the firm default) */
   planAssumptions: AssumptionSet[];
   setPlanAssumptions: (clientId: string, set: AssumptionSet | undefined) => void;
+  /** what-if scenarios; the plan itself is never changed by them */
+  scenarios: Scenario[];
+  saveScenario: (scenario: Omit<Scenario, "id" | "createdAt" | "updatedAt"> & { id?: string }) => string;
+  removeScenario: (id: string) => void;
+  /** copy a scenario's changes into the real plan (adviser confirms first) */
+  applyScenario: (id: string) => void;
   resetSampleData: () => void;
 }
 
 const StoreContext = createContext<StoreState | null>(null);
-const KEY = "omx.data.v3";
+const KEY = "omx.data.v4";
 const now = () => new Date().toISOString();
 export const newId = (p: string) => `${p}-${Math.random().toString(36).slice(2, 10)}`;
 const idOf = (r: object) => ("id" in r ? (r as { id: string }).id : (r as { clientId: string }).clientId);
@@ -69,6 +76,7 @@ export function ClientStoreProvider({ children }: { children: ReactNode }) {
   const [records, setRecords] = useState<RecordMap>(SAMPLE_RECORDS);
   const [firmAssumptions, setFirm] = useState<AssumptionSet>(SAMPLE_FIRM_ASSUMPTIONS);
   const [planAssumptions, setPlans] = useState<AssumptionSet[]>([]);
+  const [scenarios, setScenarios] = useState<Scenario[]>(SAMPLE_SCENARIOS);
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
@@ -77,7 +85,7 @@ export function ClientStoreProvider({ children }: { children: ReactNode }) {
       if (saved) {
         const data = JSON.parse(saved) as {
           clients: ClientRecord[]; members: FamilyMember[]; records: Partial<RecordMap>;
-          firmAssumptions?: AssumptionSet; planAssumptions?: AssumptionSet[];
+          firmAssumptions?: AssumptionSet; planAssumptions?: AssumptionSet[]; scenarios?: Scenario[];
         };
         /* eslint-disable react-hooks/set-state-in-effect */
         setClients(data.clients);
@@ -85,6 +93,7 @@ export function ClientStoreProvider({ children }: { children: ReactNode }) {
         setRecords({ ...SAMPLE_RECORDS, ...data.records });
         if (data.firmAssumptions) setFirm(data.firmAssumptions);
         if (data.planAssumptions) setPlans(data.planAssumptions);
+        if (data.scenarios) setScenarios(data.scenarios);
       }
     } catch {}
     setLoaded(true);
@@ -94,9 +103,9 @@ export function ClientStoreProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!loaded) return;
     try {
-      localStorage.setItem(KEY, JSON.stringify({ clients, members, records, firmAssumptions, planAssumptions }));
+      localStorage.setItem(KEY, JSON.stringify({ clients, members, records, firmAssumptions, planAssumptions, scenarios }));
     } catch {}
-  }, [clients, members, records, firmAssumptions, planAssumptions, loaded]);
+  }, [clients, members, records, firmAssumptions, planAssumptions, scenarios, loaded]);
 
   const touch = useCallback((clientId: string) => {
     setClients((list) => list.map((c) => (c.id === clientId ? { ...c, updatedAt: now() } : c)));
@@ -219,22 +228,80 @@ export function ClientStoreProvider({ children }: { children: ReactNode }) {
     [touch],
   );
 
+  const saveScenario = useCallback<StoreState["saveScenario"]>((sc) => {
+    const id = sc.id ?? newId("s");
+    setScenarios((list) => {
+      const prev = list.find((x) => x.id === id);
+      const next: Scenario = { ...sc, id, createdAt: prev?.createdAt ?? now(), updatedAt: now() };
+      return prev ? list.map((x) => (x.id === id ? next : x)) : [...list, next];
+    });
+    return id;
+  }, []);
+
+  const removeScenario = useCallback((id: string) => {
+    setScenarios((list) => list.filter((x) => x.id !== id));
+  }, []);
+
+  const applyScenario = useCallback(
+    (id: string) => {
+      const sc = scenarios.find((x) => x.id === id);
+      if (!sc) return;
+      const { retirementAges, returns, inflation, goals } = sc.changes;
+      // retirement ages: linked dates follow automatically
+      if (retirementAges) setMembers((list) => list.map((m) => (retirementAges[m.id] != null ? { ...m, retirementAge: retirementAges[m.id] } : m)));
+      // returns and inflation become this plan's overrides
+      if (returns?.length || (inflation && Object.keys(inflation).length)) {
+        setPlans((list) => {
+          const cur = list.find((p) => p.clientId === sc.clientId) ?? { clientId: sc.clientId, returns: [], inflation: {} };
+          const merged: AssumptionSet = {
+            ...cur,
+            returns: [...cur.returns.filter((r) => !returns?.some((x) => x.assetClass === r.assetClass)), ...(returns ?? [])],
+            inflation: { ...cur.inflation, ...inflation },
+            updatedAt: now(),
+          };
+          return [...list.filter((p) => p.clientId !== sc.clientId), merged];
+        });
+      }
+      // goals: changed values copied in; goals left out are removed with their reservations
+      if (goals) {
+        setRecords((all) => {
+          const dropped = new Set(Object.entries(goals).filter(([, g]) => g.include === false).map(([gid]) => gid));
+          const nextGoals = all.goals
+            .filter((g) => !dropped.has(g.id))
+            .map((g) => {
+              const c = goals[g.id];
+              if (!c) return g;
+              const { include: _include, ...values } = c;
+              void _include;
+              return { ...g, ...Object.fromEntries(Object.entries(values).filter(([, v]) => v != null)) };
+            });
+          return { ...all, goals: nextGoals, goalLinks: all.goalLinks.filter((l) => !dropped.has(l.goalId)) };
+        });
+      }
+      touch(sc.clientId);
+    },
+    [scenarios, touch],
+  );
+
   const resetSampleData = useCallback(() => {
     setClients(SAMPLE_CLIENTS);
     setMembers(SAMPLE_MEMBERS);
     setRecords(SAMPLE_RECORDS);
     setFirm(SAMPLE_FIRM_ASSUMPTIONS);
     setPlans([]);
+    setScenarios(SAMPLE_SCENARIOS);
   }, []);
 
   const value = useMemo(
     () => ({
       clients, members, records, addClient, updateClient, saveMember, removeMember,
       saveRecord, removeRecord, setGoalLinks, setExpenses, saveCreditCard,
-      firmAssumptions, setFirmAssumptions, planAssumptions, setPlanAssumptions, resetSampleData,
+      firmAssumptions, setFirmAssumptions, planAssumptions, setPlanAssumptions,
+      scenarios, saveScenario, removeScenario, applyScenario, resetSampleData,
     }),
     [clients, members, records, addClient, updateClient, saveMember, removeMember, saveRecord, removeRecord, setGoalLinks, setExpenses, saveCreditCard,
-      firmAssumptions, setFirmAssumptions, planAssumptions, setPlanAssumptions, resetSampleData],
+      firmAssumptions, setFirmAssumptions, planAssumptions, setPlanAssumptions,
+      scenarios, saveScenario, removeScenario, applyScenario, resetSampleData],
   );
   return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>;
 }

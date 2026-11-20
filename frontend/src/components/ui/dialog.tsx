@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 import { cn } from "@/lib/cn";
 
@@ -22,7 +23,10 @@ export function Dialog({ open, onClose, title, description, children, footer, si
   useEffect(() => {
     if (!open) return;
     const previous = document.activeElement as HTMLElement | null;
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    // only the dialog holding focus closes, so a dialog opened from another closes alone
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && panel.current?.contains(document.activeElement)) onClose();
+    };
     document.addEventListener("keydown", onKey);
     document.body.style.overflow = "hidden";
     // focus the first field, or the panel itself
@@ -37,7 +41,8 @@ export function Dialog({ open, onClose, title, description, children, footer, si
 
   if (!open) return null;
 
-  return (
+  // rendered at the end of <body> so a dialog opened from inside another isn't clipped by it
+  return createPortal(
     <div className="fixed inset-0 z-50 flex items-start justify-center bg-ink/30 p-4 pt-[6vh]" onMouseDown={onClose}>
       <div
         ref={panel}
@@ -60,6 +65,7 @@ export function Dialog({ open, onClose, title, description, children, footer, si
         <div className="min-h-0 flex-1 overflow-y-auto px-6 py-5">{children}</div>
         {footer && <div className="flex shrink-0 justify-end gap-2 rounded-b-lg border-t border-line bg-surface/60 px-6 py-3">{footer}</div>}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

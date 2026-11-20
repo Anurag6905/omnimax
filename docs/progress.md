@@ -22,10 +22,12 @@
 - [x] Schema: 3 assumption tables + new income/asset columns (16 tables), tested on PostgreSQL 16
 - [x] Plan results page (`/clients/[id]/results`), five views: Dashboard, Cash flow, Goal funding, Who pays for what (with investment ledger), Net worth. Sharma family only, with illustrative figures and a banner saying so
 - [x] `PlanResults` type in `packages/shared`: the output the Phase 1B engine must produce, shaped like the Omnimax output read by Input_Allocations.py
+- [x] What-if page (`/clients/[id]/what-if`): create scenarios (retirement ages, returns, inflation, goal cost/timing/leave out), see which dates move with retirement, compare up to two with the plan (table + shortfall chart), make a scenario the plan
+- [x] `scenarios` table (17 tables) and `Scenario` type: a scenario stores only its differences, so the plan is never overwritten (problem 13)
+- [x] Two ready-made Sharma scenarios with sample figures: "Rahul retires at 58", "Lower equity returns"
 
 ### Next
-- [ ] What-if panel: change retirement age, rates or goals; save as a scenario; compare with the original
-- [ ] Adviser review and sign-off
+- [ ] Adviser review and sign-off of all Phase 1A screens
 
 ### Open questions
 - Role rules in `lib/roles.ts` are a proposal (advisers see only their own clients; operations see all; only admins delete or manage staff). Confirm with the advisory team.
@@ -38,6 +40,7 @@
 - Firm return and inflation rates on screen are sample values; the firm must supply the real ones.
 - Problem 11: keep Priority Goal 3 as a third reserved goal, or remove it? (Screens keep it for now.)
 - Problem 14: should one investment be split across goals by percentage? (Not on screen yet.)
+- What-if: should "Make it the plan" keep a copy of the old plan (plan history is Phase 1B)? Should scenarios also change SIP amounts or add new goals?
 - See also "Questions to confirm" in the database doc.
 
 ### Bugs

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useState } from "react";
-import { BarChart3, ChevronRight, Pencil } from "lucide-react";
+import { BarChart3, ChevronRight, Pencil, Split } from "lucide-react";
 import type { Client, FamilyMember } from "@omnimax/shared";
 import { Button } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
@@ -109,6 +109,12 @@ export default function ClientProfilePage() {
               <Pencil size={15} /> Edit household
             </Button>
           )}
+          <Link
+            href={`/clients/${client.id}/what-if`}
+            className="inline-flex h-9 items-center gap-2 rounded-md border border-line-strong bg-white px-4 text-sm font-medium text-ink transition-colors hover:bg-surface"
+          >
+            <Split size={15} /> What-if
+          </Link>
           <Link
             href={`/clients/${client.id}/results`}
             className="inline-flex h-9 items-center gap-2 rounded-md bg-brand px-4 text-sm font-medium text-white transition-colors hover:bg-brand-hover"

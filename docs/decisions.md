@@ -2,6 +2,15 @@
 
 Newest first. One entry per decision: what, why, alternatives.
 
+## 2026-11-20 — What-if scenarios
+- **A scenario stores only differences** from the plan (`scenarios.changes` jsonb: retirement ages, returns, inflation, per-goal changes). The plan is never overwritten by a what-if (problem 13); "Make it the plan" copies the changes in on purpose, after a confirmation.
+- **Retirement-age changes reuse the plan's rules**: anything stored as "at retirement" moves with the new age, and the editor lists each date that moves (problems 1 and 12).
+- **Compare = plan + up to two scenarios**, so the table stays readable. Each scenario value shows its change against the plan with "better/worse" in words, not colour alone.
+- **Sample figures**: only the two ready-made Sharma scenarios have figures; new scenarios show their changes and "After engine" for results.
+- **Sample generator adjusted**: it now saves 20% of pre-retirement surplus (100% after). The earlier version made "retire later" look worse for unrelated goals, which would mislead reviewers. This is a sample-making assumption only, not a calculation rule.
+- **Dialogs render in a portal** and Escape closes only the focused dialog, so a dialog can open another (scenario editor → returns).
+- Sidebar no longer lists Results and What-if: both live on each client (buttons on the profile).
+
 ## 2026-11-19 — Results screens before the engine exists
 - **Results are read, never calculated, in the frontend.** `lib/results.ts` returns a `PlanResults` object; Phase 1B swaps its one function for the engine. Screens don't change.
 - **`PlanResults` mirrors the Omnimax output** that `Input_Allocations.py` reads: per goal per year required/funded; per investment per year start value, contributions, earnings, withdrawals. This keeps the engine checkable against Omnimax.

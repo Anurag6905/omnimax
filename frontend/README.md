@@ -18,6 +18,7 @@ frontend/src/
 │       ├── clients/page.tsx          /clients – client list
 │       ├── clients/[id]/page.tsx     /clients/CL-… – client profile and tabs
 │       ├── clients/[id]/results/page.tsx  /clients/…/results – plan results (5 views)
+│       ├── clients/[id]/what-if/page.tsx  /clients/…/what-if – scenarios and comparison
 │       ├── admin/users/page.tsx      /admin/users – staff and roles
 │       ├── assumptions/page.tsx      /assumptions – firm-wide default assumptions
 │       └── design-system/page.tsx    /design-system – colours, type, parts
@@ -28,6 +29,7 @@ frontend/src/
 │   ├── records/              RecordSection: table + add/edit dialog used by every profile list
 │   ├── assumptions/          Returns by period, inflation, asset-class map (firm page + client tab)
 │   ├── results/              Results views: dashboard, cash flow, goal funding, who pays for what, net worth
+│   ├── whatif/               Scenario editor and plan-vs-scenario comparison
 │   └── clients/              Client screens: forms, dialogs, life line
 │       └── tabs/             One file per profile tab: family, cashflow, goals, assets,
 │                             liabilities, insurance, assumptions
@@ -38,6 +40,7 @@ frontend/src/
 │   ├── roles.ts              What each role may do
 │   ├── assumptions.ts        Which rate applies (firm or plan), retirement year, period checks
 │   ├── results.ts            Reads plan results (sample file now, engine in 1B) and summarises goals
+│   ├── scenarios.ts          Describes scenario changes, dates that move, comparison figures
 │   ├── use-hash-tab.ts       Keeps the open tab in the URL (#goals)
 │   ├── format.ts             Dates, ages, ₹ amounts
 │   └── cn.ts                 Class-name helper
@@ -46,7 +49,8 @@ frontend/src/
     ├── sample-data.ts        Fictional households used on every screen
     ├── sheet-lists.ts        Dropdown lists and section names from the client data sheet
     ├── assumption-defaults.ts  Sample firm rates and the proposed asset-class mapping
-    └── sample-results.json   Illustrative plan results for the Sharma family (not calculated)
+    ├── sample-scenarios.ts   Two ready-made what-ifs for the Sharma family
+    └── sample-results*.json  Illustrative plan and scenario results for the Sharma family (not calculated)
 ```
 
 ## Conventions

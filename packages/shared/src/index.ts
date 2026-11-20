@@ -188,3 +188,37 @@ export interface PlanResults {
   allocations: AllocationRow[];
   netWorth: NetWorthYear[];
 }
+
+// ---- what-if scenarios (db: scenarios.changes jsonb) ----
+
+/** Changes to one goal in a scenario; anything left out stays as in the plan. */
+export interface GoalChange {
+  /** false = leave this goal out of the scenario */
+  include?: boolean;
+  costToday?: number;
+  startYear?: number;
+  startAge?: number;
+  /** retirement goals: monthly expenses in today's value */
+  currentMonthlyExpenses?: number;
+}
+
+/** Only what differs from the plan. */
+export interface ScenarioChanges {
+  /** member id → retirement age; linked dates follow it */
+  retirementAges?: Record<UUID, number>;
+  /** whole asset classes replaced, like a plan override */
+  returns?: ReturnAssumption[];
+  inflation?: Partial<Record<InflationKey, number>>;
+  goals?: Record<UUID, GoalChange>;
+}
+
+export interface Scenario {
+  id: UUID;
+  clientId: UUID;
+  name: string;
+  notes?: string;
+  changes: ScenarioChanges;
+  createdBy?: UUID;
+  createdAt: string;
+  updatedAt: string;
+}

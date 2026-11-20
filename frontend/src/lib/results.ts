@@ -1,5 +1,7 @@
 import type { Asset, AllocationRow, Goal, Income, PlanResults } from "@omnimax/shared";
 import sharmaResults from "@/data/sample-results.json";
+import sharmaRetire58 from "@/data/sample-results-retire-58.json";
+import sharmaLowerEquity from "@/data/sample-results-lower-equity.json";
 
 /**
  * Plan results for the screens. Phase 1A: one fixed set of ILLUSTRATIVE figures
@@ -8,6 +10,13 @@ import sharmaResults from "@/data/sample-results.json";
  */
 export function getResults(clientId: string): PlanResults | undefined {
   return clientId === "c-1" ? (sharmaResults as PlanResults) : undefined;
+}
+
+/** Results for a what-if scenario: only the two ready-made Sharma scenarios have them in Phase 1A. */
+export function getScenarioResults(scenarioId: string): PlanResults | undefined {
+  if (scenarioId === "s-retire-58") return sharmaRetire58 as PlanResults;
+  if (scenarioId === "s-lower-equity") return sharmaLowerEquity as PlanResults;
+  return undefined;
 }
 
 export interface GoalSummary {

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { BarChart3, ChevronDown, FileText, Gauge, LogOut, Menu, Palette, SlidersHorizontal, Split, Users, UserCog, X } from "lucide-react";
+import { ChevronDown, FileText, Gauge, LogOut, Menu, Palette, SlidersHorizontal, Users, UserCog, X } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { can, ROLE_LABEL, type Permission } from "@/lib/roles";
 import { cn } from "@/lib/cn";
@@ -23,8 +23,6 @@ const NAV: Array<{ group?: string; items: NavItem[] }> = [
     group: "Planning",
     items: [
       { href: "/assumptions", label: "Firm assumptions", icon: SlidersHorizontal },
-      { href: "/scenarios", label: "What-if scenarios", icon: Split, soon: true },
-      { href: "/results", label: "Results", icon: BarChart3, soon: true },
       { href: "/reports", label: "Reports", icon: FileText, soon: true },
     ],
   },
